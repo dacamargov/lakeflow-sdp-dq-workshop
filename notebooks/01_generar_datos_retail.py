@@ -37,6 +37,20 @@
 # MAGIC %md
 # MAGIC ## 1. Configuración
 # MAGIC
+# MAGIC ### ▶️ Cómo correrlo (orden importante)
+# MAGIC
+# MAGIC Los widgets **solo aparecen después de ejecutar la celda que los crea**. Por eso:
+# MAGIC
+# MAGIC 1. **Ejecuta solo la celda de código de abajo** (la primera, con `dbutils.widgets...`).
+# MAGIC    Arriba del notebook aparecerá la barra de **widgets**.
+# MAGIC 2. **Escribe tu catálogo** en el widget `catalogo` (y ajusta otros si quieres).
+# MAGIC 3. Ahora sí, **ejecuta el resto del notebook** (*Run all* o celda por celda).
+# MAGIC
+# MAGIC > Si haces *Run all* de una vez sin tocar nada, usará los **valores por defecto**. Para cambiar
+# MAGIC > el catálogo primero corre la celda de abajo, ponlo en el widget y vuelve a correr.
+# MAGIC
+# MAGIC ### Resolución de parámetros
+# MAGIC
 # MAGIC El notebook corre en **workspaces distintos**, así que **nada está fijo en el código**. Cada
 # MAGIC parámetro se resuelve en este orden:
 # MAGIC

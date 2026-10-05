@@ -97,8 +97,14 @@ export WORKSHOP_CATALOG=mi_catalogo
 1. Sube `notebooks/01_generar_datos_retail.py` a tu workspace
    (**Workspace → Import → File**). Databricks lo reconoce como notebook de Python.
 2. Ábrelo y conéctalo a **Serverless**.
-3. En los **widgets** de arriba, cambia `catalogo` por tu catálogo.
-4. **Run all**. En ~1–2 minutos deja los datos en el volumen.
+3. **Ejecuta solo la primera celda de código** (la de configuración, con `dbutils.widgets...`).
+   Esto **habilita los widgets** que aparecen arriba del notebook.
+4. En el widget **`catalogo`**, escribe tu catálogo (y ajusta otros si quieres).
+5. Ahora **Run all** (o corre el resto de celdas). En ~1–2 minutos deja los datos en el volumen.
+
+> ⚠️ Los widgets **solo aparecen tras ejecutar la celda que los crea**. Si haces *Run all* de una
+> vez sin pasar por el paso 3–4, el notebook usará los **valores por defecto** (incluido el catálogo
+> `dacamargovws_catalog`).
 
 ### Opción B — Con la CLI
 
