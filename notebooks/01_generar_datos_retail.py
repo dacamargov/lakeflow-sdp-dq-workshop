@@ -46,25 +46,21 @@
 # MAGIC
 # MAGIC | Parámetro | Variable de entorno | Default | Descripción |
 # MAGIC |---|---|---|---|
-# MAGIC | `catalogo`        | `WORKSHOP_CATALOG`      | `dacamargovws_catalog` | Catálogo destino (debe existir) |
-# MAGIC | `esquema`         | `WORKSHOP_SCHEMA`       | `lakeflow_workshop`    | Esquema **base** destino (se crea si falta) |
-# MAGIC | `volumen`         | `WORKSHOP_VOLUME`       | `landing`              | Volumen **base** para los archivos crudos |
-# MAGIC | `aislamiento`     | `WORKSHOP_ISOLATION`    | `esquema`              | Cómo separar a los participantes: `esquema` · `volumen` · `ninguno` |
+# MAGIC | `catalogo`        | `WORKSHOP_CATALOG`      | `dacamargovws_catalog` | Catálogo destino, **compartido** (debe existir) |
+# MAGIC | `esquema`         | `WORKSHOP_SCHEMA`       | `lakeflow_workshop`    | Prefijo del esquema; el real es `{esquema}_{usuario}` |
+# MAGIC | `volumen`         | `WORKSHOP_VOLUME`       | `landing`              | Volumen para los archivos crudos |
 # MAGIC | `n_clientes`      | `WORKSHOP_N_CUSTOMERS`  | `2500`                 | Tamaño del universo de clientes |
 # MAGIC | `n_pedidos`       | `WORKSHOP_N_ORDERS`     | `15000`                | Número de pedidos a generar |
 # MAGIC | `pct_error`       | `WORKSHOP_PCT_ERROR`    | `0.15`                 | Proporción de registros con error de negocio |
 # MAGIC | `semilla`         | `WORKSHOP_SEED`         | `20260101`             | Semilla de reproducibilidad |
 # MAGIC | `limpiar_landing` | `WORKSHOP_CLEAN`        | `true`                 | Borra el volumen antes de escribir |
 # MAGIC
-# MAGIC > **Multiusuario (`aislamiento`)**, derivado de `current_user()`:
-# MAGIC > - **`esquema`** (default): cada quien su esquema `{esquema}_{usuario}` (p. ej.
-# MAGIC >   `lakeflow_workshop_daniel_vargas`). Aísla **todo**: landing, control y las tablas del
-# MAGIC >   pipeline que construyas luego con Genie code.
-# MAGIC > - **`volumen`**: **esquema compartido**, pero volumen `{volumen}_{usuario}` y tabla de
-# MAGIC >   control por usuario. Útil si el admin pre-crea UN esquema y otorga `CREATE VOLUME` a todos.
-# MAGIC >   ⚠️ Al construir el pipeline, cada quien debe apuntar sus tablas a un esquema/prefijo propio
-# MAGIC >   para no chocar en el esquema compartido.
-# MAGIC > - **`ninguno`**: ruta fija compartida (**se sobrescriben entre sí**).
+# MAGIC > **Multiusuario:** se comparte **solo el catálogo**. Cada participante escribe en su propio
+# MAGIC > esquema derivado de `current_user()` — p. ej. `lakeflow_workshop_daniel_vargas` — con su
+# MAGIC > propio volumen de `landing` dentro. Así varios pueden correr el workshop **al mismo tiempo**
+# MAGIC > sin pisarse, y las tablas que cada quien cree luego con Genie code quedan en su esquema
+# MAGIC > (nada de un único esquema convertido en pantano de tablas). Cada participante solo necesita
+# MAGIC > permiso `USE CATALOG` + `CREATE SCHEMA` sobre el catálogo compartido.
 
 # COMMAND ----------
 
@@ -80,7 +76,6 @@ _DEFAULTS = {
     "catalogo": "dacamargovws_catalog",
     "esquema": "lakeflow_workshop",
     "volumen": "landing",
-    "aislamiento": "esquema",
     "n_clientes": "2500",
     "n_pedidos": "15000",
     "pct_error": "0.15",
@@ -110,16 +105,12 @@ def parametro(nombre: str, variable_entorno: str) -> str:
 
 CATALOGO = parametro("catalogo", "WORKSHOP_CATALOG")
 ESQUEMA_BASE = parametro("esquema", "WORKSHOP_SCHEMA")
-VOLUMEN_BASE = parametro("volumen", "WORKSHOP_VOLUME")
-AISLAMIENTO = parametro("aislamiento", "WORKSHOP_ISOLATION").lower()
+VOLUMEN = parametro("volumen", "WORKSHOP_VOLUME")
 N_CLIENTES = int(parametro("n_clientes", "WORKSHOP_N_CUSTOMERS"))
 N_PEDIDOS = int(parametro("n_pedidos", "WORKSHOP_N_ORDERS"))
 PCT_ERROR = float(parametro("pct_error", "WORKSHOP_PCT_ERROR"))
 SEMILLA = int(parametro("semilla", "WORKSHOP_SEED"))
 LIMPIAR_LANDING = parametro("limpiar_landing", "WORKSHOP_CLEAN").lower() == "true"
-
-if AISLAMIENTO not in ("esquema", "volumen", "ninguno"):
-    raise ValueError(f"aislamiento inválido: '{AISLAMIENTO}'. Usa 'esquema', 'volumen' o 'ninguno'.")
 
 
 def slug_identificador(texto: str) -> str:
@@ -133,33 +124,13 @@ def slug_identificador(texto: str) -> str:
     return limpio[:60] or "usuario"
 
 
-# Aislamiento multiusuario, derivado de la identidad (current_user):
-#   - 'esquema' (default): cada quien su propio esquema {esquema}_{usuario}. Aísla TODO (landing,
-#                          control y las tablas del pipeline que se construyen luego con Genie code).
-#   - 'volumen':           esquema compartido, pero volumen {volumen}_{usuario} y tabla de control
-#                          por usuario. Útil si el admin pre-crea UN esquema y da CREATE VOLUME a todos.
-#   - 'ninguno':           ruta fija compartida (los participantes se sobrescribirían entre sí).
-USUARIO = ""
-SUFIJO_USUARIO = ""
-if AISLAMIENTO in ("esquema", "volumen"):
-    try:
-        USUARIO = spark.sql("SELECT current_user()").collect()[0][0]
-    except Exception as error:
-        print(f"(aviso) no se pudo resolver current_user(): {error}")
-    SUFIJO_USUARIO = slug_identificador(USUARIO.split("@")[0]) if USUARIO else ""
-
-if AISLAMIENTO == "esquema" and SUFIJO_USUARIO:
-    ESQUEMA = f"{ESQUEMA_BASE}_{SUFIJO_USUARIO}"
-    VOLUMEN = VOLUMEN_BASE
-    SUFIJO_TABLA = ""
-elif AISLAMIENTO == "volumen" and SUFIJO_USUARIO:
-    ESQUEMA = ESQUEMA_BASE
-    VOLUMEN = f"{VOLUMEN_BASE}_{SUFIJO_USUARIO}"
-    SUFIJO_TABLA = f"_{SUFIJO_USUARIO}"  # evita colisión de la tabla de control en el esquema compartido
-else:  # 'ninguno' (o no se pudo resolver el usuario)
-    ESQUEMA = ESQUEMA_BASE
-    VOLUMEN = VOLUMEN_BASE
-    SUFIJO_TABLA = ""
+# Aislamiento por usuario (siempre): se comparte SOLO el catálogo; cada participante escribe en su
+# propio esquema derivado de su identidad (current_user), p. ej. `lakeflow_workshop_daniel_vargas`.
+# Así varios pueden correr el workshop en paralelo sin pisarse, y las tablas que cada quien cree
+# luego con Genie code quedan en su propio esquema (no se vuelve un pantano de tablas compartidas).
+USUARIO = spark.sql("SELECT current_user()").collect()[0][0]
+SUFIJO_USUARIO = slug_identificador(USUARIO.split("@")[0])
+ESQUEMA = f"{ESQUEMA_BASE}_{SUFIJO_USUARIO}"
 
 RUTA_LANDING = f"/Volumes/{CATALOGO}/{ESQUEMA}/{VOLUMEN}"
 HOY = date.today()
@@ -167,8 +138,7 @@ HOY = date.today()
 INICIO_VENTANA = HOY - timedelta(days=180)
 
 print("Configuración resuelta:")
-print(f"  usuario        = {USUARIO or '(no resuelto)'}")
-print(f"  aislamiento    = {AISLAMIENTO}")
+print(f"  usuario        = {USUARIO}")
 print(f"  destino        = {CATALOGO}.{ESQUEMA}  (volumen: {VOLUMEN})")
 print(f"  ruta landing   = {RUTA_LANDING}")
 print(f"  n_clientes     = {N_CLIENTES}")
@@ -188,18 +158,14 @@ print(f"  ventana        = {INICIO_VENTANA} -> {HOY}")
 
 # COMMAND ----------
 
-# Best-effort: crear catálogo y esquema. Si no tienes privilegio (p. ej. esquema compartido ya
-# pre-creado por el admin en modo aislamiento='volumen'), se asume que ya existen y se continúa.
+# El catálogo se asume existente y compartido (best-effort por si tienes permiso de crearlo).
+# El esquema y el volumen son propios del usuario, así que se crean aquí.
 try:
     spark.sql(f"CREATE CATALOG IF NOT EXISTS {CATALOGO}")
 except Exception as error:
     print(f"(aviso) no se pudo crear el catálogo '{CATALOGO}', se asume existente: {error}")
 
-try:
-    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOGO}.{ESQUEMA}")
-except Exception as error:
-    print(f"(aviso) no se pudo crear el esquema '{ESQUEMA}', se asume existente: {error}")
-
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOGO}.{ESQUEMA}")
 spark.sql(f"CREATE VOLUME IF NOT EXISTS {CATALOGO}.{ESQUEMA}.{VOLUMEN}")
 print(f"OK · esquema y volumen listos en {CATALOGO}.{ESQUEMA}  (volumen: {VOLUMEN})")
 
@@ -669,7 +635,7 @@ escribir_json("pedidos_items", pedidos_items)
 
 from pyspark.sql import Row
 
-TABLA_CONTROL = f"{CATALOGO}.{ESQUEMA}._bitacora_generacion{SUFIJO_TABLA}"
+TABLA_CONTROL = f"{CATALOGO}.{ESQUEMA}._bitacora_generacion"
 GENERADO_EN = datetime.now()
 
 conteos = {
