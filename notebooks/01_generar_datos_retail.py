@@ -731,26 +731,28 @@ cheatsheet = f"""
         'Created by me' (verás solo el tuyo aunque haya nombres repetidos).
 --------------------------------------------------------------------------------
   PROMPT 1 · BRONZE (ingesta con Auto Loader)
-  "Crea tablas de streaming bronze que ingieran con Auto Loader desde
+  "Crea la capa bronze con tablas de streaming que ingieran con Auto Loader desde
    {RUTA_LANDING}/ . clientes, pedidos y pedidos_items son JSON; productos y
    tiendas son CSV con header. Deja todas las columnas como string y agrega
    columnas de linaje con el nombre de archivo y la fecha de ingesta."
 
   PROMPT 2 · SILVER (tipado, normalización y calidad)
-  "Crea tablas silver que tipen y normalicen cada entidad con expectativas de
-   calidad (@dlt.expect / @dlt.expect_or_drop): email válido, monto_total
-   numérico y >= 0, fecha_pedido no futura, descuento_pct entre 0 y 100,
-   cantidad > 0, e id_cliente/id_tienda/sku que existan en sus dimensiones.
-   Normaliza el país a código ISO y deduplica clientes y productos."
+  "Crea la capa silver con tablas que tipen y normalicen cada entidad a partir de
+   las tablas bronze, con expectativas de calidad (@dlt.expect / @dlt.expect_or_drop):
+   email válido, monto_total numérico y >= 0, fecha_pedido no futura, descuento_pct
+   entre 0 y 100, cantidad > 0, e id_cliente/id_tienda/sku que existan en sus
+   dimensiones. Normaliza el país a código ISO y deduplica clientes y productos."
 
   PROMPT 3 · GOLD (modelo dimensional y métricas)
-  "Crea tablas gold: dimensiones limpias de clientes, productos y tiendas, un
-   hecho de ventas al grano de línea, y KPIs mensuales de ventas por tienda y
-   categoría. Usa CLUSTER BY en vez de particionar."
+  "Crea la capa gold a partir de las tablas silver, con tablas de dimensiones
+   limpias de clientes, productos y tiendas, un hecho de ventas al grano de línea,
+   y KPIs mensuales de ventas por tienda y categoría. Usa CLUSTER BY en vez de
+   particionar."
 
   PROMPT 4 · OBSERVABILIDAD DE CALIDAD
-  "Publica las métricas de las expectativas del pipeline y compáralas contra la
-   tabla {TABLA_CONTROL} para mostrar inyectado vs. detectado."
+  "Crea la capa de observabilidad de calidad con una tabla que publique las métricas
+   de las expectativas del pipeline y las compare contra la tabla {TABLA_CONTROL}
+   para mostrar inyectado vs. detectado."
 ================================================================================
 """
 print(cheatsheet)

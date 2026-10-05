@@ -185,25 +185,26 @@ de su **owner** y escribe en **su propio esquema**, así que no hay colisión de
 > **"Created by me"** (u owner): verás solo el tuyo aunque haya nombres repetidos.
 
 **Bronze (ingesta cruda con Auto Loader):**
-> "Crea tablas de streaming bronze que ingieran con Auto Loader los archivos de
+> "Crea la capa bronze con tablas de streaming que ingieran con Auto Loader los archivos de
 > `<TU_RUTA_LANDING>/` — `clientes`, `pedidos` y `pedidos_items` son JSON, `productos` y `tiendas`
 > son CSV con header. Deja todas las columnas como string y agrega columnas de linaje con el nombre
 > de archivo y la fecha de ingesta."
 
 **Silver (tipado, normalización y expectativas de calidad):**
-> "Crea tablas silver que tipen y normalicen cada entidad. Agrega expectativas de calidad con
-> `@dlt.expect_or_drop` / `@dlt.expect`: email con formato válido, `monto_total` numérico y >= 0,
-> `fecha_pedido` no futura, `descuento_pct` entre 0 y 100, cantidades > 0, y que `id_cliente` e
-> `id_tienda` existan en sus dimensiones. Normaliza el país a código ISO y deduplica clientes y
-> productos."
+> "Crea la capa silver con tablas que tipen y normalicen cada entidad a partir de las tablas bronze.
+> Agrega expectativas de calidad con `@dlt.expect_or_drop` / `@dlt.expect`: email con formato
+> válido, `monto_total` numérico y >= 0, `fecha_pedido` no futura, `descuento_pct` entre 0 y 100,
+> cantidades > 0, y que `id_cliente` e `id_tienda` existan en sus dimensiones. Normaliza el país a
+> código ISO y deduplica clientes y productos."
 
 **Gold (modelo dimensional y métricas):**
-> "Crea tablas gold: dimensiones limpias de clientes, productos y tiendas, un hecho de ventas al
-> grano de línea, y KPIs mensuales de ventas por tienda y por categoría. Usa `CLUSTER BY` en vez
-> de particionar."
+> "Crea la capa gold a partir de las tablas silver, con tablas de dimensiones limpias de clientes,
+> productos y tiendas, un hecho de ventas al grano de línea, y KPIs mensuales de ventas por tienda
+> y por categoría. Usa `CLUSTER BY` en vez de particionar."
 
 **Observabilidad de calidad:**
-> "Crea una tabla que publique las métricas de las expectativas del pipeline y compárala contra
+> "Crea la capa de observabilidad de calidad con una tabla que publique las métricas de las
+> expectativas del pipeline y la compare contra
 > `{catalogo}.lakeflow_workshop_{usuario}._bitacora_generacion` para mostrar *inyectado vs. detectado*."
 
 > El objetivo pedagógico: ver cómo Genie code arma el DAG, la incrementalidad y la calidad
