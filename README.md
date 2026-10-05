@@ -47,7 +47,6 @@ Como el notebook corre en **workspaces distintos**, cada parámetro se resuelve 
 | Parámetro (widget) | Variable de entorno | Default | Descripción |
 |---|---|---|---|
 | `catalogo`        | `WORKSHOP_CATALOG`     | `dacamargovws_catalog` | Catálogo destino, **compartido** (**cámbialo por el tuyo**). |
-| `esquema`         | `WORKSHOP_SCHEMA`      | `lakeflow_workshop`    | Prefijo del esquema; el real es `{esquema}_{usuario}`. |
 | `volumen`         | `WORKSHOP_VOLUME`      | `landing`              | Volumen para los archivos crudos. |
 | `n_clientes`      | `WORKSHOP_N_CUSTOMERS` | `2500`                 | Tamaño del universo de clientes. |
 | `n_pedidos`       | `WORKSHOP_N_ORDERS`    | `15000`                | Número de pedidos a generar. |
@@ -61,7 +60,7 @@ Como el notebook corre en **workspaces distintos**, cada parámetro se resuelve 
 ### Varios participantes al mismo tiempo
 
 Se comparte **solo el catálogo**. Cada participante escribe en su **propio esquema**, derivado
-automáticamente de `current_user()` (`{esquema}_{usuario}`), con su propio volumen de `landing`
+automáticamente de `current_user()` (`lakeflow_workshop_{usuario}`), con su propio volumen de `landing`
 dentro. No hay nada que configurar ni coordinar.
 
 ```
@@ -87,7 +86,6 @@ Para fijarlo por variable de entorno (por ejemplo en un cluster o job):
 
 ```bash
 export WORKSHOP_CATALOG=mi_catalogo
-export WORKSHOP_SCHEMA=lakeflow_workshop
 ```
 
 ---
@@ -124,7 +122,7 @@ Al terminar, el notebook imprime un resumen JSON y valida el viaje de ida y vuel
 
 ## 4. Qué genera
 
-Se crean **5 datasets crudos** en `{catalogo}.{esquema}_{usuario}`, dentro del volumen `landing`:
+Se crean **5 datasets crudos** en `{catalogo}.lakeflow_workshop_{usuario}`, dentro del volumen `landing`:
 
 ```
 /Volumes/<catalogo>/<esquema>/landing/
@@ -135,7 +133,7 @@ Se crean **5 datasets crudos** en `{catalogo}.{esquema}_{usuario}`, dentro del v
 └── pedidos_items/  pedidos_items.json  (hecho, grano línea)
 ```
 
-Más una tabla de control: `{catalogo}.{esquema}._bitacora_generacion` con el conteo de registros
+Más una tabla de control: `{catalogo}.lakeflow_workshop_{usuario}._bitacora_generacion` con el conteo de registros
 y **cuántos errores se inyectaron a propósito** (para contrastar *inyectado vs. detectado* cuando
 tus reglas de calidad estén corriendo).
 
@@ -175,7 +173,7 @@ Esta es la parte central del workshop. Con los datos ya en el volumen, abre un
 **Lakeflow Spark Declarative Pipeline** y pídele a **Genie code** que lo construya por capas.
 
 > 🔑 **Cada participante usa SUS propios valores.** Como la data vive en tu esquema
-> `{esquema}_{usuario}`, los prompts apuntan a **tu** ruta de landing. Para que nadie se equivoque,
+> `lakeflow_workshop_{usuario}`, los prompts apuntan a **tu** ruta de landing. Para que nadie se equivoque,
 > **el notebook imprime al final (sección 12) los 4 prompts ya rellenados con tus valores** — solo
 > cópialos y pégalos en Genie code dentro del pipeline.
 
@@ -206,7 +204,7 @@ de su **owner** y escribe en **su propio esquema**, así que no hay colisión de
 
 **Observabilidad de calidad:**
 > "Crea una tabla que publique las métricas de las expectativas del pipeline y compárala contra
-> `{catalogo}.{esquema}_{usuario}._bitacora_generacion` para mostrar *inyectado vs. detectado*."
+> `{catalogo}.lakeflow_workshop_{usuario}._bitacora_generacion` para mostrar *inyectado vs. detectado*."
 
 > El objetivo pedagógico: ver cómo Genie code arma el DAG, la incrementalidad y la calidad
 > declarativa con muchísimo menos código que un pipeline tradicional.

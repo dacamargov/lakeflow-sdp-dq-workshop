@@ -47,7 +47,6 @@
 # MAGIC | Parámetro | Variable de entorno | Default | Descripción |
 # MAGIC |---|---|---|---|
 # MAGIC | `catalogo`        | `WORKSHOP_CATALOG`      | `dacamargovws_catalog` | Catálogo destino, **compartido** (debe existir) |
-# MAGIC | `esquema`         | `WORKSHOP_SCHEMA`       | `lakeflow_workshop`    | Prefijo del esquema; el real es `{esquema}_{usuario}` |
 # MAGIC | `volumen`         | `WORKSHOP_VOLUME`       | `landing`              | Volumen para los archivos crudos |
 # MAGIC | `n_clientes`      | `WORKSHOP_N_CUSTOMERS`  | `2500`                 | Tamaño del universo de clientes |
 # MAGIC | `n_pedidos`       | `WORKSHOP_N_ORDERS`     | `15000`                | Número de pedidos a generar |
@@ -74,7 +73,6 @@ from datetime import date, datetime, timedelta
 # --- Declarar widgets (ignora el error si ya existen o si no hay UI) ---
 _DEFAULTS = {
     "catalogo": "dacamargovws_catalog",
-    "esquema": "lakeflow_workshop",
     "volumen": "landing",
     "n_clientes": "2500",
     "n_pedidos": "15000",
@@ -104,8 +102,10 @@ def parametro(nombre: str, variable_entorno: str) -> str:
 
 
 CATALOGO = parametro("catalogo", "WORKSHOP_CATALOG")
-ESQUEMA_BASE = parametro("esquema", "WORKSHOP_SCHEMA")
 VOLUMEN = parametro("volumen", "WORKSHOP_VOLUME")
+# Prefijo fijo del esquema: el esquema real se deriva del usuario ({ESQUEMA_BASE}_{usuario}),
+# así que basta con indicar el catálogo. No necesita widget.
+ESQUEMA_BASE = "lakeflow_workshop"
 N_CLIENTES = int(parametro("n_clientes", "WORKSHOP_N_CUSTOMERS"))
 N_PEDIDOS = int(parametro("n_pedidos", "WORKSHOP_N_ORDERS"))
 PCT_ERROR = float(parametro("pct_error", "WORKSHOP_PCT_ERROR"))
@@ -701,7 +701,7 @@ lectura["clientes"].select("id_cliente", "nombre_completo", "email", "ciudad", "
 # MAGIC los 4 prompts **ya rellenados con tus rutas** — solo cópialos y pégalos en Genie code dentro de
 # MAGIC un pipeline Lakeflow; deja que Genie cree las tablas (no tienes que nombrar nada a mano).
 # MAGIC
-# MAGIC - El **catálogo** es compartido, pero el **esquema** es tuyo: `{esquema}_{usuario}`.
+# MAGIC - El **catálogo** es compartido, pero el **esquema** es tuyo: `lakeflow_workshop_{usuario}`.
 # MAGIC - Tu pipeline queda a tu nombre (**owner**) y escribe en tu esquema → no choca con nadie.
 # MAGIC - Para encontrarlo en la lista de pipelines, filtra por **"Created by me"**.
 
