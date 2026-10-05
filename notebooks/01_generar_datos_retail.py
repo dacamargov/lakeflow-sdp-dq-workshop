@@ -697,17 +697,15 @@ lectura["clientes"].select("id_cliente", "nombre_completo", "email", "ciudad", "
 # MAGIC %md
 # MAGIC ## 12. Tu hoja de datos para construir el pipeline con Genie code
 # MAGIC
-# MAGIC **Importante:** cada participante tiene su propio esquema y volumen. Usa **exactamente** los
-# MAGIC valores que imprime la celda de abajo en tus prompts de Genie code, para que el pipeline lea
-# MAGIC *tus* datos y escriba en *tu* esquema (y no choque con el de nadie más). Fíjate que:
+# MAGIC **Importante:** cada participante tiene su propio esquema y volumen. La celda de abajo imprime
+# MAGIC los 4 prompts **ya rellenados con tus rutas** — solo cópialos y pégalos en Genie code dentro de
+# MAGIC un pipeline Lakeflow; deja que Genie cree las tablas (no tienes que nombrar nada a mano).
 # MAGIC
 # MAGIC - El **catálogo** es compartido, pero el **esquema** es tuyo: `{esquema}_{usuario}`.
-# MAGIC - El **nombre del pipeline** lleva tu sufijo, p. ej. `lakeflow_dq_daniel_vargas`.
-# MAGIC - El **esquema destino (target)** del pipeline es tu propio esquema.
+# MAGIC - Tu pipeline queda a tu nombre (**owner**) y escribe en tu esquema → no choca con nadie.
+# MAGIC - Para encontrarlo en la lista de pipelines, filtra por **"Created by me"**.
 
 # COMMAND ----------
-
-PIPELINE_SUGERIDO = f"lakeflow_dq_{SUFIJO_USUARIO}"
 
 cheatsheet = f"""
 ================================================================================
@@ -716,8 +714,6 @@ cheatsheet = f"""
   Catálogo (compartido) : {CATALOGO}
   TU esquema            : {ESQUEMA}
   TU ruta de landing    : {RUTA_LANDING}
-  Nombre de pipeline    : {PIPELINE_SUGERIDO}   <-- USA ESTE NOMBRE EXACTO
-  Esquema destino (target del pipeline): {CATALOGO}.{ESQUEMA}
 
   Archivos de origen (úsalos tal cual en tus prompts):
     JSON : {RUTA_LANDING}/clientes
@@ -726,14 +722,11 @@ cheatsheet = f"""
     JSON : {RUTA_LANDING}/pedidos
     JSON : {RUTA_LANDING}/pedidos_items
 --------------------------------------------------------------------------------
-  PASOS EN DATABRICKS:
-   1. Crea un pipeline Lakeflow (SDP) con ESTE nombre exacto: '{PIPELINE_SUGERIDO}'.
-      OJO: Databricks permite pipelines con el mismo nombre (no da error), así que
-      el sufijo de tu usuario es lo único que evita confundir tu pipeline con el de
-      otro participante en un workspace compartido. El nombre lo defines TÚ al crear
-      el pipeline (en la UI/API), no el prompt de Genie.
-   2. Como 'target' / esquema de destino pon: {CATALOGO}.{ESQUEMA}
-   3. En el editor del pipeline, pega los prompts de abajo en Genie code.
+  CÓMO USARLO:
+   1. Abre un pipeline Lakeflow (SDP) y pega los prompts de abajo en Genie code:
+      deja que Genie cree las tablas; no tienes que nombrar nada a mano.
+   2. Tu pipeline queda a tu nombre (owner) y escribe en TU esquema, así que no
+      choca con el de nadie aunque el nombre se repita.
    TIP: para encontrar tu pipeline en la lista Jobs & Pipelines, filtra por
         'Created by me' (verás solo el tuyo aunque haya nombres repetidos).
 --------------------------------------------------------------------------------
@@ -768,7 +761,6 @@ resumen = {
     "usuario": USUARIO,
     "destino": f"{CATALOGO}.{ESQUEMA}",
     "ruta_landing": RUTA_LANDING,
-    "pipeline_sugerido": PIPELINE_SUGERIDO,
     "entidades": ENTIDADES,
     "conteos_escritos": conteos,
     "conteos_leidos": conteos_leidos,

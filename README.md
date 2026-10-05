@@ -175,30 +175,16 @@ Esta es la parte central del workshop. Con los datos ya en el volumen, abre un
 **Lakeflow Spark Declarative Pipeline** y pídele a **Genie code** que lo construya por capas.
 
 > 🔑 **Cada participante usa SUS propios valores.** Como la data vive en tu esquema
-> `{esquema}_{usuario}`, los prompts tienen que apuntar a **tu** ruta de landing y el pipeline
-> tiene que escribir en **tu** esquema; de lo contrario leerías datos de otro o chocarían los
-> nombres. Para que nadie se equivoque, **el notebook imprime al final (sección 12) una "hoja de
-> datos" personalizada** con tu esquema, tu ruta de landing, el nombre de pipeline sugerido
-> (`lakeflow_dq_{usuario}`) y los 4 prompts **ya rellenados con tus valores** — solo cópialos.
+> `{esquema}_{usuario}`, los prompts apuntan a **tu** ruta de landing. Para que nadie se equivoque,
+> **el notebook imprime al final (sección 12) los 4 prompts ya rellenados con tus valores** — solo
+> cópialos y pégalos en Genie code dentro del pipeline.
 
-Antes de pegar los prompts:
+No hace falta crear ni nombrar el pipeline a mano: **deja que Genie code lo cree** al pegar los
+prompts. Aunque dos participantes terminen con un pipeline del mismo nombre, cada uno queda a nombre
+de su **owner** y escribe en **su propio esquema**, así que no hay colisión de datos.
 
-1. Crea el pipeline con **nombre por usuario**, p. ej. `lakeflow_dq_daniel_vargas`. El nombre lo
-   defines **tú al crear el pipeline** (UI/API), no el prompt de Genie.
-2. Configura el **esquema destino (target)** del pipeline como **tu** esquema:
-   `{catalogo}.{esquema}_{usuario}`.
-3. Reemplaza `<TU_RUTA_LANDING>` por la que imprime el notebook
-   (`/Volumes/<catalogo>/<esquema>_<usuario>/landing`).
-
-> ⚠️ **Nombres de pipeline no son únicos en Databricks:** dos participantes pueden crear un pipeline
-> con el mismo nombre sin que dé error (se distinguen por un `pipeline_id` interno). En un workspace
-> compartido eso genera una lista confusa y el riesgo de abrir/correr el pipeline de otro. Por eso
-> **cada quien debe usar el nombre con su sufijo** (`lakeflow_dq_<usuario>`). Aun si dos se llamaran
-> igual, los **datos no se corrompen** porque cada pipeline escribe en su propio esquema target; el
-> sufijo es para poder **encontrar y operar el tuyo** sin equivocarte.
->
-> 💡 Para ubicar el tuyo en la lista **Jobs & Pipelines → Pipelines**, filtra por **"Created by me"**
-> (u owner): verás solo tu pipeline aunque haya nombres repetidos.
+> 💡 Para encontrar el tuyo en la lista **Jobs & Pipelines → Pipelines**, filtra por
+> **"Created by me"** (u owner): verás solo el tuyo aunque haya nombres repetidos.
 
 **Bronze (ingesta cruda con Auto Loader):**
 > "Crea tablas de streaming bronze que ingieran con Auto Loader los archivos de
