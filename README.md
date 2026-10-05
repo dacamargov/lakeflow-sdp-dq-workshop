@@ -30,6 +30,10 @@ parametrizado** y no hay nada fijo en el código.
 > El notebook usa **solo la librería estándar de Python + Spark**: no hace `pip install` de nada,
 > así corre igual en cualquier workspace.
 
+> 👤 **¿Eres el admin del cliente?** Lo que debes preparar antes del workshop (grupo, permisos de
+> catálogo, entitlements y compute) está en **[`docs/prerequisitos-admin.md`](docs/prerequisitos-admin.md)**,
+> con el SQL exacto y un mensaje listo para reenviar.
+
 ---
 
 ## 2. Configuración por variables de entorno
@@ -228,6 +232,8 @@ Antes de pegar los prompts:
 ```
 lakeflow-sdp-dq-workshop/
 ├── README.md
+├── docs/
+│   └── prerequisitos-admin.md       # qué debe preparar el admin del cliente (permisos, grupo, compute)
 └── notebooks/
     └── 01_generar_datos_retail.py   # el único paso que ejecutan los participantes
 ```
