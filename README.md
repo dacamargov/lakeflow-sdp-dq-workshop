@@ -192,6 +192,9 @@ Antes de pegar los prompts:
 > **cada quien debe usar el nombre con su sufijo** (`lakeflow_dq_<usuario>`). Aun si dos se llamaran
 > igual, los **datos no se corrompen** porque cada pipeline escribe en su propio esquema target; el
 > sufijo es para poder **encontrar y operar el tuyo** sin equivocarte.
+>
+> 💡 Para ubicar el tuyo en la lista **Jobs & Pipelines → Pipelines**, filtra por **"Created by me"**
+> (u owner): verás solo tu pipeline aunque haya nombres repetidos.
 
 **Bronze (ingesta cruda con Auto Loader):**
 > "Crea tablas de streaming bronze que ingieran con Auto Loader los archivos de

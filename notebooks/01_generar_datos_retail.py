@@ -734,6 +734,8 @@ cheatsheet = f"""
       el pipeline (en la UI/API), no el prompt de Genie.
    2. Como 'target' / esquema de destino pon: {CATALOGO}.{ESQUEMA}
    3. En el editor del pipeline, pega los prompts de abajo en Genie code.
+   TIP: para encontrar tu pipeline en la lista Jobs & Pipelines, filtra por
+        'Created by me' (verás solo el tuyo aunque haya nombres repetidos).
 --------------------------------------------------------------------------------
   PROMPT 1 · BRONZE (ingesta con Auto Loader)
   "Crea tablas de streaming bronze que ingieran con Auto Loader desde
