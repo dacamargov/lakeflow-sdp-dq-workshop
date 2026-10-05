@@ -46,14 +46,20 @@
 # MAGIC
 # MAGIC | Parámetro | Variable de entorno | Default | Descripción |
 # MAGIC |---|---|---|---|
-# MAGIC | `catalogo`        | `WORKSHOP_CATALOG`      | `dacamargovws_catalog` | Catálogo destino (debe existir) |
-# MAGIC | `esquema`         | `WORKSHOP_SCHEMA`       | `lakeflow_workshop`    | Esquema destino (se crea si falta) |
-# MAGIC | `volumen`         | `WORKSHOP_VOLUME`       | `landing`              | Volumen para los archivos crudos |
-# MAGIC | `n_clientes`      | `WORKSHOP_N_CUSTOMERS`  | `2500`                 | Tamaño del universo de clientes |
-# MAGIC | `n_pedidos`       | `WORKSHOP_N_ORDERS`     | `15000`                | Número de pedidos a generar |
-# MAGIC | `pct_error`       | `WORKSHOP_PCT_ERROR`    | `0.15`                 | Proporción de registros con error de negocio |
-# MAGIC | `semilla`         | `WORKSHOP_SEED`         | `20260101`             | Semilla de reproducibilidad |
-# MAGIC | `limpiar_landing` | `WORKSHOP_CLEAN`        | `true`                 | Borra el volumen antes de escribir |
+# MAGIC | `catalogo`           | `WORKSHOP_CATALOG`      | `dacamargovws_catalog` | Catálogo destino (debe existir) |
+# MAGIC | `esquema`            | `WORKSHOP_SCHEMA`       | `lakeflow_workshop`    | Esquema **base** destino (se crea si falta) |
+# MAGIC | `volumen`            | `WORKSHOP_VOLUME`       | `landing`              | Volumen para los archivos crudos |
+# MAGIC | `aislar_por_usuario` | `WORKSHOP_ISOLATE`      | `true`                 | Si es `true`, el esquema real es `{esquema}_{usuario}` para que varios participantes **no se sobrescriban** |
+# MAGIC | `n_clientes`         | `WORKSHOP_N_CUSTOMERS`  | `2500`                 | Tamaño del universo de clientes |
+# MAGIC | `n_pedidos`          | `WORKSHOP_N_ORDERS`     | `15000`                | Número de pedidos a generar |
+# MAGIC | `pct_error`          | `WORKSHOP_PCT_ERROR`    | `0.15`                 | Proporción de registros con error de negocio |
+# MAGIC | `semilla`            | `WORKSHOP_SEED`         | `20260101`             | Semilla de reproducibilidad |
+# MAGIC | `limpiar_landing`    | `WORKSHOP_CLEAN`        | `true`                 | Borra el volumen antes de escribir |
+# MAGIC
+# MAGIC > **Multiusuario:** con `aislar_por_usuario=true` (default), cada participante escribe en su
+# MAGIC > propio esquema derivado de `current_user()` — p. ej. `lakeflow_workshop_daniel_vargas`.
+# MAGIC > Así varios pueden correr el workshop **al mismo tiempo en el mismo catálogo** sin pisarse.
+# MAGIC > Si prefieres un esquema compartido fijo, ponlo en `false`.
 
 # COMMAND ----------
 
@@ -69,6 +75,7 @@ _DEFAULTS = {
     "catalogo": "dacamargovws_catalog",
     "esquema": "lakeflow_workshop",
     "volumen": "landing",
+    "aislar_por_usuario": "true",
     "n_clientes": "2500",
     "n_pedidos": "15000",
     "pct_error": "0.15",
@@ -97,13 +104,40 @@ def parametro(nombre: str, variable_entorno: str) -> str:
 
 
 CATALOGO = parametro("catalogo", "WORKSHOP_CATALOG")
-ESQUEMA = parametro("esquema", "WORKSHOP_SCHEMA")
+ESQUEMA_BASE = parametro("esquema", "WORKSHOP_SCHEMA")
 VOLUMEN = parametro("volumen", "WORKSHOP_VOLUME")
+AISLAR_POR_USUARIO = parametro("aislar_por_usuario", "WORKSHOP_ISOLATE").lower() == "true"
 N_CLIENTES = int(parametro("n_clientes", "WORKSHOP_N_CUSTOMERS"))
 N_PEDIDOS = int(parametro("n_pedidos", "WORKSHOP_N_ORDERS"))
 PCT_ERROR = float(parametro("pct_error", "WORKSHOP_PCT_ERROR"))
 SEMILLA = int(parametro("semilla", "WORKSHOP_SEED"))
 LIMPIAR_LANDING = parametro("limpiar_landing", "WORKSHOP_CLEAN").lower() == "true"
+
+
+def slug_identificador(texto: str) -> str:
+    """Convierte un texto en un identificador SQL válido (minúsculas, letras/dígitos/_)."""
+    limpio = "".join(c if c.isalnum() else "_" for c in texto.lower())
+    while "__" in limpio:
+        limpio = limpio.replace("__", "_")
+    limpio = limpio.strip("_")
+    if limpio and limpio[0].isdigit():
+        limpio = f"u_{limpio}"
+    return limpio[:60] or "usuario"
+
+
+# Aislamiento multiusuario: si varios participantes comparten el mismo catálogo, cada uno escribe
+# en su propio esquema derivado de su identidad (current_user), así nadie se sobrescribe.
+USUARIO = ""
+SUFIJO_USUARIO = ""
+if AISLAR_POR_USUARIO:
+    try:
+        USUARIO = spark.sql("SELECT current_user()").collect()[0][0]
+    except Exception as error:
+        print(f"(aviso) no se pudo resolver current_user(): {error}")
+    # Tomamos la parte local del correo (antes de @) para un nombre de esquema corto y legible.
+    SUFIJO_USUARIO = slug_identificador(USUARIO.split("@")[0]) if USUARIO else ""
+
+ESQUEMA = f"{ESQUEMA_BASE}_{SUFIJO_USUARIO}" if SUFIJO_USUARIO else ESQUEMA_BASE
 
 RUTA_LANDING = f"/Volumes/{CATALOGO}/{ESQUEMA}/{VOLUMEN}"
 HOY = date.today()
@@ -111,6 +145,8 @@ HOY = date.today()
 INICIO_VENTANA = HOY - timedelta(days=180)
 
 print("Configuración resuelta:")
+print(f"  usuario        = {USUARIO or '(no resuelto)'}")
+print(f"  aislar_usuario = {AISLAR_POR_USUARIO}")
 print(f"  destino        = {CATALOGO}.{ESQUEMA}  (volumen: {VOLUMEN})")
 print(f"  ruta landing   = {RUTA_LANDING}")
 print(f"  n_clientes     = {N_CLIENTES}")

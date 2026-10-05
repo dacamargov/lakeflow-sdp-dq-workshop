@@ -42,17 +42,32 @@ Como el notebook corre en **workspaces distintos**, cada parámetro se resuelve 
 
 | Parámetro (widget) | Variable de entorno | Default | Descripción |
 |---|---|---|---|
-| `catalogo`        | `WORKSHOP_CATALOG`     | `dacamargovws_catalog` | Catálogo destino (**cámbialo por el tuyo**). |
-| `esquema`         | `WORKSHOP_SCHEMA`      | `lakeflow_workshop`    | Esquema destino (se crea si falta). |
-| `volumen`         | `WORKSHOP_VOLUME`      | `landing`              | Volumen para los archivos crudos. |
-| `n_clientes`      | `WORKSHOP_N_CUSTOMERS` | `2500`                 | Tamaño del universo de clientes. |
-| `n_pedidos`       | `WORKSHOP_N_ORDERS`    | `15000`                | Número de pedidos a generar. |
-| `pct_error`       | `WORKSHOP_PCT_ERROR`   | `0.15`                 | Proporción de registros con error de negocio inyectado. |
-| `semilla`         | `WORKSHOP_SEED`        | `20260101`             | Semilla de reproducibilidad. |
-| `limpiar_landing` | `WORKSHOP_CLEAN`       | `true`                 | Vacía el volumen antes de escribir (re-ejecución idempotente). |
+| `catalogo`           | `WORKSHOP_CATALOG`     | `dacamargovws_catalog` | Catálogo destino (**cámbialo por el tuyo**). |
+| `esquema`            | `WORKSHOP_SCHEMA`      | `lakeflow_workshop`    | Esquema **base** destino (se crea si falta). |
+| `volumen`            | `WORKSHOP_VOLUME`      | `landing`              | Volumen para los archivos crudos. |
+| `aislar_por_usuario` | `WORKSHOP_ISOLATE`     | `true`                 | Si es `true`, el esquema real es `{esquema}_{usuario}` para aislar a cada participante. |
+| `n_clientes`         | `WORKSHOP_N_CUSTOMERS` | `2500`                 | Tamaño del universo de clientes. |
+| `n_pedidos`          | `WORKSHOP_N_ORDERS`    | `15000`                | Número de pedidos a generar. |
+| `pct_error`          | `WORKSHOP_PCT_ERROR`   | `0.15`                 | Proporción de registros con error de negocio inyectado. |
+| `semilla`            | `WORKSHOP_SEED`        | `20260101`             | Semilla de reproducibilidad. |
+| `limpiar_landing`    | `WORKSHOP_CLEAN`       | `true`                 | Vacía el volumen antes de escribir (re-ejecución idempotente). |
 
-> **Participantes:** lo único que *tienes* que ajustar es **`catalogo`** (y opcionalmente
-> `esquema`) para apuntar a un catálogo donde tengas permisos. El resto funciona con los defaults.
+> **Participantes:** lo único que *tienes* que ajustar es **`catalogo`** para apuntar a un catálogo
+> donde tengas permisos. El resto funciona con los defaults.
+
+### Varios participantes al mismo tiempo
+
+Con `aislar_por_usuario=true` (default), **cada participante escribe en su propio esquema**
+derivado de `current_user()` — por ejemplo `lakeflow_workshop_daniel_vargas`. Así **muchos pueden
+correr el workshop en paralelo sobre el mismo catálogo sin pisarse** (el volumen y la tabla de
+control viven dentro de ese esquema por usuario, así que también quedan aislados).
+
+- **Mismo workspace/catálogo compartido** → deja el default `true`: no hay que coordinar nada.
+- **Cada quien en su propio workspace** → también funciona; si quieres un esquema fijo y limpio,
+  puedes poner `aislar_por_usuario=false`.
+
+> ⚠️ Si pones `aislar_por_usuario=false` y varios apuntan al mismo `catalogo.esquema.volumen`, se
+> **sobrescriben entre sí** (el default `limpiar_landing=true` vacía la carpeta antes de escribir).
 
 Para fijarlo por variable de entorno (por ejemplo en un cluster o job):
 
@@ -95,7 +110,9 @@ Al terminar, el notebook imprime un resumen JSON y valida el viaje de ida y vuel
 
 ## 4. Qué genera
 
-Se crean **5 datasets crudos** en `{catalogo}.{esquema}`, dentro del volumen `landing`:
+Se crean **5 datasets crudos** en `{catalogo}.{esquema}`, dentro del volumen `landing` (donde
+`{esquema}` es el esquema efectivo por usuario cuando `aislar_por_usuario=true`, p. ej.
+`lakeflow_workshop_daniel_vargas`):
 
 ```
 /Volumes/<catalogo>/<esquema>/landing/
