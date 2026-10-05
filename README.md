@@ -184,27 +184,30 @@ de su **owner** y escribe en **su propio esquema**, así que no hay colisión de
 > 💡 Para encontrar el tuyo en la lista **Jobs & Pipelines → Pipelines**, filtra por
 > **"Created by me"** (u owner): verás solo el tuyo aunque haya nombres repetidos.
 
+Todos los prompts asumen un pipeline **Lakeflow SDP (Spark Declarative Pipelines)** y lo refuerzan
+explícitamente, para que Genie use los idioms de SDP.
+
 **Bronze (ingesta cruda con Auto Loader):**
-> "Crea la capa bronze con tablas de streaming que ingieran con Auto Loader los archivos de
-> `<TU_RUTA_LANDING>/` — `clientes`, `pedidos` y `pedidos_items` son JSON, `productos` y `tiendas`
-> son CSV con header. Deja todas las columnas como string y agrega columnas de linaje con el nombre
-> de archivo y la fecha de ingesta."
+> "Usando Lakeflow SDP (Spark Declarative Pipelines), crea la capa bronze con tablas de streaming que
+> ingieran con Auto Loader los archivos de `<TU_RUTA_LANDING>/` — `clientes`, `pedidos` y
+> `pedidos_items` son JSON, `productos` y `tiendas` son CSV con header. Deja todas las columnas como
+> string y agrega columnas de linaje con el nombre de archivo y la fecha de ingesta."
 
 **Silver (tipado, normalización y expectativas de calidad):**
-> "Crea la capa silver con tablas que tipen y normalicen cada entidad a partir de las tablas bronze.
-> Agrega expectativas de calidad con `@dlt.expect_or_drop` / `@dlt.expect`: email con formato
-> válido, `monto_total` numérico y >= 0, `fecha_pedido` no futura, `descuento_pct` entre 0 y 100,
-> cantidades > 0, y que `id_cliente` e `id_tienda` existan en sus dimensiones. Normaliza el país a
-> código ISO y deduplica clientes y productos."
+> "Con Lakeflow SDP, crea la capa silver con tablas que tipen y normalicen cada entidad a partir de
+> las tablas bronze. Agrega expectativas de calidad (expectations de SDP): email con formato válido,
+> `monto_total` numérico y >= 0, `fecha_pedido` no futura, `descuento_pct` entre 0 y 100, cantidades
+> > 0, y que `id_cliente` e `id_tienda` existan en sus dimensiones. Normaliza el país a código ISO y
+> deduplica clientes y productos."
 
 **Gold (modelo dimensional y métricas):**
-> "Crea la capa gold a partir de las tablas silver, con tablas de dimensiones limpias de clientes,
-> productos y tiendas, un hecho de ventas al grano de línea, y KPIs mensuales de ventas por tienda
-> y por categoría. Usa `CLUSTER BY` en vez de particionar."
+> "Con Lakeflow SDP, crea la capa gold a partir de las tablas silver, con tablas de dimensiones
+> limpias de clientes, productos y tiendas, un hecho de ventas al grano de línea, y KPIs mensuales de
+> ventas por tienda y por categoría. Usa `CLUSTER BY` en vez de particionar."
 
 **Observabilidad de calidad:**
-> "Crea la capa de observabilidad de calidad con una tabla que publique las métricas de las
-> expectativas del pipeline y la compare contra
+> "Con Lakeflow SDP, crea la capa de observabilidad de calidad con una tabla que publique las
+> métricas de las expectativas del pipeline y la compare contra
 > `{catalogo}.lakeflow_workshop_{usuario}._bitacora_generacion` para mostrar *inyectado vs. detectado*."
 
 > El objetivo pedagógico: ver cómo Genie code arma el DAG, la incrementalidad y la calidad
