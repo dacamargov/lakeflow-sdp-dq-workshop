@@ -169,13 +169,27 @@ algo que atrapar:
 
 Esta es la parte central del workshop. Con los datos ya en el volumen, abre un
 **Lakeflow Spark Declarative Pipeline** y pídele a **Genie code** que lo construya por capas.
-Prompts sugeridos:
+
+> 🔑 **Cada participante usa SUS propios valores.** Como la data vive en tu esquema
+> `{esquema}_{usuario}`, los prompts tienen que apuntar a **tu** ruta de landing y el pipeline
+> tiene que escribir en **tu** esquema; de lo contrario leerías datos de otro o chocarían los
+> nombres. Para que nadie se equivoque, **el notebook imprime al final (sección 12) una "hoja de
+> datos" personalizada** con tu esquema, tu ruta de landing, el nombre de pipeline sugerido
+> (`lakeflow_dq_{usuario}`) y los 4 prompts **ya rellenados con tus valores** — solo cópialos.
+
+Antes de pegar los prompts:
+
+1. Crea el pipeline con **nombre por usuario**, p. ej. `lakeflow_dq_daniel_vargas`.
+2. Configura el **esquema destino (target)** del pipeline como **tu** esquema:
+   `{catalogo}.{esquema}_{usuario}`.
+3. Reemplaza `<TU_RUTA_LANDING>` por la que imprime el notebook
+   (`/Volumes/<catalogo>/<esquema>_<usuario>/landing`).
 
 **Bronze (ingesta cruda con Auto Loader):**
 > "Crea tablas de streaming bronze que ingieran con Auto Loader los archivos de
-> `/Volumes/<catalogo>/<esquema>/landing/` — `clientes` y `pedidos` y `pedidos_items` son JSON,
-> `productos` y `tiendas` son CSV con header. Deja todas las columnas como string y agrega columnas
-> de linaje con el nombre de archivo y la fecha de ingesta."
+> `<TU_RUTA_LANDING>/` — `clientes`, `pedidos` y `pedidos_items` son JSON, `productos` y `tiendas`
+> son CSV con header. Deja todas las columnas como string y agrega columnas de linaje con el nombre
+> de archivo y la fecha de ingesta."
 
 **Silver (tipado, normalización y expectativas de calidad):**
 > "Crea tablas silver que tipen y normalicen cada entidad. Agrega expectativas de calidad con
@@ -191,7 +205,7 @@ Prompts sugeridos:
 
 **Observabilidad de calidad:**
 > "Crea una tabla que publique las métricas de las expectativas del pipeline y compárala contra
-> `_bitacora_generacion` para mostrar *inyectado vs. detectado* por dimensión de calidad."
+> `{catalogo}.{esquema}_{usuario}._bitacora_generacion` para mostrar *inyectado vs. detectado*."
 
 > El objetivo pedagógico: ver cómo Genie code arma el DAG, la incrementalidad y la calidad
 > declarativa con muchísimo menos código que un pipeline tradicional.

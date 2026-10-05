@@ -694,9 +694,75 @@ lectura["clientes"].select("id_cliente", "nombre_completo", "email", "ciudad", "
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ## 12. Tu hoja de datos para construir el pipeline con Genie code
+# MAGIC
+# MAGIC **Importante:** cada participante tiene su propio esquema y volumen. Usa **exactamente** los
+# MAGIC valores que imprime la celda de abajo en tus prompts de Genie code, para que el pipeline lea
+# MAGIC *tus* datos y escriba en *tu* esquema (y no choque con el de nadie más). Fíjate que:
+# MAGIC
+# MAGIC - El **catálogo** es compartido, pero el **esquema** es tuyo: `{esquema}_{usuario}`.
+# MAGIC - El **nombre del pipeline** lleva tu sufijo, p. ej. `lakeflow_dq_daniel_vargas`.
+# MAGIC - El **esquema destino (target)** del pipeline es tu propio esquema.
+
+# COMMAND ----------
+
+PIPELINE_SUGERIDO = f"lakeflow_dq_{SUFIJO_USUARIO}"
+
+cheatsheet = f"""
+================================================================================
+  HOJA DE DATOS · {USUARIO}
+================================================================================
+  Catálogo (compartido) : {CATALOGO}
+  TU esquema            : {ESQUEMA}
+  TU ruta de landing    : {RUTA_LANDING}
+  Nombre de pipeline    : {PIPELINE_SUGERIDO}
+  Esquema destino (target del pipeline): {CATALOGO}.{ESQUEMA}
+
+  Archivos de origen (úsalos tal cual en tus prompts):
+    JSON : {RUTA_LANDING}/clientes
+    CSV  : {RUTA_LANDING}/productos      (header = true)
+    CSV  : {RUTA_LANDING}/tiendas        (header = true)
+    JSON : {RUTA_LANDING}/pedidos
+    JSON : {RUTA_LANDING}/pedidos_items
+--------------------------------------------------------------------------------
+  PASOS EN DATABRICKS:
+   1. Crea un pipeline Lakeflow (SDP) llamado '{PIPELINE_SUGERIDO}'.
+   2. Como 'target' / esquema de destino pon: {CATALOGO}.{ESQUEMA}
+   3. En el editor del pipeline, pega los prompts de abajo en Genie code.
+--------------------------------------------------------------------------------
+  PROMPT 1 · BRONZE (ingesta con Auto Loader)
+  "Crea tablas de streaming bronze que ingieran con Auto Loader desde
+   {RUTA_LANDING}/ . clientes, pedidos y pedidos_items son JSON; productos y
+   tiendas son CSV con header. Deja todas las columnas como string y agrega
+   columnas de linaje con el nombre de archivo y la fecha de ingesta."
+
+  PROMPT 2 · SILVER (tipado, normalización y calidad)
+  "Crea tablas silver que tipen y normalicen cada entidad con expectativas de
+   calidad (@dlt.expect / @dlt.expect_or_drop): email válido, monto_total
+   numérico y >= 0, fecha_pedido no futura, descuento_pct entre 0 y 100,
+   cantidad > 0, e id_cliente/id_tienda/sku que existan en sus dimensiones.
+   Normaliza el país a código ISO y deduplica clientes y productos."
+
+  PROMPT 3 · GOLD (modelo dimensional y métricas)
+  "Crea tablas gold: dimensiones limpias de clientes, productos y tiendas, un
+   hecho de ventas al grano de línea, y KPIs mensuales de ventas por tienda y
+   categoría. Usa CLUSTER BY en vez de particionar."
+
+  PROMPT 4 · OBSERVABILIDAD DE CALIDAD
+  "Publica las métricas de las expectativas del pipeline y compáralas contra la
+   tabla {TABLA_CONTROL} para mostrar inyectado vs. detectado."
+================================================================================
+"""
+print(cheatsheet)
+
+# COMMAND ----------
+
 resumen = {
+    "usuario": USUARIO,
     "destino": f"{CATALOGO}.{ESQUEMA}",
     "ruta_landing": RUTA_LANDING,
+    "pipeline_sugerido": PIPELINE_SUGERIDO,
     "entidades": ENTIDADES,
     "conteos_escritos": conteos,
     "conteos_leidos": conteos_leidos,
