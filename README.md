@@ -42,32 +42,44 @@ Como el notebook corre en **workspaces distintos**, cada parámetro se resuelve 
 
 | Parámetro (widget) | Variable de entorno | Default | Descripción |
 |---|---|---|---|
-| `catalogo`           | `WORKSHOP_CATALOG`     | `dacamargovws_catalog` | Catálogo destino (**cámbialo por el tuyo**). |
-| `esquema`            | `WORKSHOP_SCHEMA`      | `lakeflow_workshop`    | Esquema **base** destino (se crea si falta). |
-| `volumen`            | `WORKSHOP_VOLUME`      | `landing`              | Volumen para los archivos crudos. |
-| `aislar_por_usuario` | `WORKSHOP_ISOLATE`     | `true`                 | Si es `true`, el esquema real es `{esquema}_{usuario}` para aislar a cada participante. |
-| `n_clientes`         | `WORKSHOP_N_CUSTOMERS` | `2500`                 | Tamaño del universo de clientes. |
-| `n_pedidos`          | `WORKSHOP_N_ORDERS`    | `15000`                | Número de pedidos a generar. |
-| `pct_error`          | `WORKSHOP_PCT_ERROR`   | `0.15`                 | Proporción de registros con error de negocio inyectado. |
-| `semilla`            | `WORKSHOP_SEED`        | `20260101`             | Semilla de reproducibilidad. |
-| `limpiar_landing`    | `WORKSHOP_CLEAN`       | `true`                 | Vacía el volumen antes de escribir (re-ejecución idempotente). |
+| `catalogo`        | `WORKSHOP_CATALOG`     | `dacamargovws_catalog` | Catálogo destino (**cámbialo por el tuyo**). |
+| `esquema`         | `WORKSHOP_SCHEMA`      | `lakeflow_workshop`    | Esquema **base** destino (se crea si falta). |
+| `volumen`         | `WORKSHOP_VOLUME`      | `landing`              | Volumen **base** para los archivos crudos. |
+| `aislamiento`     | `WORKSHOP_ISOLATION`   | `esquema`              | Cómo separar a los participantes: `esquema` · `volumen` · `ninguno`. |
+| `n_clientes`      | `WORKSHOP_N_CUSTOMERS` | `2500`                 | Tamaño del universo de clientes. |
+| `n_pedidos`       | `WORKSHOP_N_ORDERS`    | `15000`                | Número de pedidos a generar. |
+| `pct_error`       | `WORKSHOP_PCT_ERROR`   | `0.15`                 | Proporción de registros con error de negocio inyectado. |
+| `semilla`         | `WORKSHOP_SEED`        | `20260101`             | Semilla de reproducibilidad. |
+| `limpiar_landing` | `WORKSHOP_CLEAN`       | `true`                 | Vacía el volumen antes de escribir (re-ejecución idempotente). |
 
 > **Participantes:** lo único que *tienes* que ajustar es **`catalogo`** para apuntar a un catálogo
 > donde tengas permisos. El resto funciona con los defaults.
 
-### Varios participantes al mismo tiempo
+### Varios participantes al mismo tiempo (`aislamiento`)
 
-Con `aislar_por_usuario=true` (default), **cada participante escribe en su propio esquema**
-derivado de `current_user()` — por ejemplo `lakeflow_workshop_daniel_vargas`. Así **muchos pueden
-correr el workshop en paralelo sobre el mismo catálogo sin pisarse** (el volumen y la tabla de
-control viven dentro de ese esquema por usuario, así que también quedan aislados).
+El modo se deriva de `current_user()` y controla **dónde escribe cada participante** para que no se
+pisen al correr en paralelo sobre el mismo catálogo:
 
-- **Mismo workspace/catálogo compartido** → deja el default `true`: no hay que coordinar nada.
-- **Cada quien en su propio workspace** → también funciona; si quieres un esquema fijo y limpio,
-  puedes poner `aislar_por_usuario=false`.
+| Modo | Esquema | Volumen | Tabla de control | Cuándo usarlo |
+|---|---|---|---|---|
+| **`esquema`** (default) | `{esquema}_{usuario}` | `landing` | por usuario (en su esquema) | Recomendado. Aísla **todo**, incluidas las tablas bronze/silver/gold que cada quien crea luego con Genie code. |
+| **`volumen`** | `{esquema}` (compartido) | `{volumen}_{usuario}` | `_bitacora_generacion_{usuario}` | Cuando el admin **pre-crea un solo esquema** y otorga `CREATE VOLUME` a todos (pero no `CREATE SCHEMA`). |
+| **`ninguno`** | `{esquema}` | `{volumen}` | `_bitacora_generacion` | Un solo usuario, o cuando tú asignas manualmente catálogo/esquema distintos. |
 
-> ⚠️ Si pones `aislar_por_usuario=false` y varios apuntan al mismo `catalogo.esquema.volumen`, se
-> **sobrescriben entre sí** (el default `limpiar_landing=true` vacía la carpeta antes de escribir).
+Ejemplos reales (validados) para el usuario `daniel.vargas@databricks.com`:
+
+```
+esquema → dacamargovws_catalog.lakeflow_workshop_daniel_vargas  · volumen: landing
+volumen → dacamargovws_catalog.lakeflow_workshop                · volumen: landing_daniel_vargas
+```
+
+> ⚠️ **Con `volumen` (esquema compartido):** los **datos crudos** quedan aislados por el volumen,
+> pero al construir el pipeline con Genie code, cada participante debe dirigir sus tablas del
+> pipeline a **un esquema o prefijo propio**, o chocarán de nombre en el esquema compartido. Por eso
+> el default es `esquema`: aísla el workshop completo sin que nadie tenga que pensar en esto.
+>
+> ⚠️ Con `aislamiento=ninguno`, si varios apuntan a la misma ruta se **sobrescriben entre sí**
+> (el default `limpiar_landing=true` vacía la carpeta antes de escribir).
 
 Para fijarlo por variable de entorno (por ejemplo en un cluster o job):
 
@@ -110,9 +122,8 @@ Al terminar, el notebook imprime un resumen JSON y valida el viaje de ida y vuel
 
 ## 4. Qué genera
 
-Se crean **5 datasets crudos** en `{catalogo}.{esquema}`, dentro del volumen `landing` (donde
-`{esquema}` es el esquema efectivo por usuario cuando `aislar_por_usuario=true`, p. ej.
-`lakeflow_workshop_daniel_vargas`):
+Se crean **5 datasets crudos** en `{catalogo}.{esquema}`, dentro del volumen `landing` (el esquema
+y/o el volumen llevan el sufijo del usuario según el modo de `aislamiento`, ver arriba):
 
 ```
 /Volumes/<catalogo>/<esquema>/landing/
