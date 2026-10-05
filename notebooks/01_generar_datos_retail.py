@@ -716,7 +716,7 @@ cheatsheet = f"""
   Catálogo (compartido) : {CATALOGO}
   TU esquema            : {ESQUEMA}
   TU ruta de landing    : {RUTA_LANDING}
-  Nombre de pipeline    : {PIPELINE_SUGERIDO}
+  Nombre de pipeline    : {PIPELINE_SUGERIDO}   <-- USA ESTE NOMBRE EXACTO
   Esquema destino (target del pipeline): {CATALOGO}.{ESQUEMA}
 
   Archivos de origen (úsalos tal cual en tus prompts):
@@ -727,7 +727,11 @@ cheatsheet = f"""
     JSON : {RUTA_LANDING}/pedidos_items
 --------------------------------------------------------------------------------
   PASOS EN DATABRICKS:
-   1. Crea un pipeline Lakeflow (SDP) llamado '{PIPELINE_SUGERIDO}'.
+   1. Crea un pipeline Lakeflow (SDP) con ESTE nombre exacto: '{PIPELINE_SUGERIDO}'.
+      OJO: Databricks permite pipelines con el mismo nombre (no da error), así que
+      el sufijo de tu usuario es lo único que evita confundir tu pipeline con el de
+      otro participante en un workspace compartido. El nombre lo defines TÚ al crear
+      el pipeline (en la UI/API), no el prompt de Genie.
    2. Como 'target' / esquema de destino pon: {CATALOGO}.{ESQUEMA}
    3. En el editor del pipeline, pega los prompts de abajo en Genie code.
 --------------------------------------------------------------------------------

@@ -179,11 +179,19 @@ Esta es la parte central del workshop. Con los datos ya en el volumen, abre un
 
 Antes de pegar los prompts:
 
-1. Crea el pipeline con **nombre por usuario**, p. ej. `lakeflow_dq_daniel_vargas`.
+1. Crea el pipeline con **nombre por usuario**, p. ej. `lakeflow_dq_daniel_vargas`. El nombre lo
+   defines **tú al crear el pipeline** (UI/API), no el prompt de Genie.
 2. Configura el **esquema destino (target)** del pipeline como **tu** esquema:
    `{catalogo}.{esquema}_{usuario}`.
 3. Reemplaza `<TU_RUTA_LANDING>` por la que imprime el notebook
    (`/Volumes/<catalogo>/<esquema>_<usuario>/landing`).
+
+> ⚠️ **Nombres de pipeline no son únicos en Databricks:** dos participantes pueden crear un pipeline
+> con el mismo nombre sin que dé error (se distinguen por un `pipeline_id` interno). En un workspace
+> compartido eso genera una lista confusa y el riesgo de abrir/correr el pipeline de otro. Por eso
+> **cada quien debe usar el nombre con su sufijo** (`lakeflow_dq_<usuario>`). Aun si dos se llamaran
+> igual, los **datos no se corrompen** porque cada pipeline escribe en su propio esquema target; el
+> sufijo es para poder **encontrar y operar el tuyo** sin equivocarte.
 
 **Bronze (ingesta cruda con Auto Loader):**
 > "Crea tablas de streaming bronze que ingieran con Auto Loader los archivos de
