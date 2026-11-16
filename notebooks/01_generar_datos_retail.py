@@ -69,7 +69,7 @@
 # MAGIC | `limpiar_landing` | `WORKSHOP_CLEAN`        | `true`                 | Borra el volumen antes de escribir |
 # MAGIC
 # MAGIC > **Multiusuario:** se comparte **solo el catálogo**. Cada participante escribe en su propio
-# MAGIC > esquema derivado de `current_user()` — p. ej. `lakeflow_workshop_daniel_vargas` — con su
+# MAGIC > esquema derivado de `current_user()` — p. ej. `lakeflow_workshop_ana_gomez` — con su
 # MAGIC > propio volumen de `landing` dentro. Así varios pueden correr el workshop **al mismo tiempo**
 # MAGIC > sin pisarse, y las tablas que cada quien cree luego con Genie code quedan en su esquema
 # MAGIC > (nada de un único esquema convertido en pantano de tablas). Cada participante solo necesita
@@ -139,7 +139,7 @@ def slug_identificador(texto: str) -> str:
 
 
 # Aislamiento por usuario (siempre): se comparte SOLO el catálogo; cada participante escribe en su
-# propio esquema derivado de su identidad (current_user), p. ej. `lakeflow_workshop_daniel_vargas`.
+# propio esquema derivado de su identidad (current_user), p. ej. `lakeflow_workshop_ana_gomez`.
 # Así varios pueden correr el workshop en paralelo sin pisarse, y las tablas que cada quien cree
 # luego con Genie code quedan en su propio esquema (no se vuelve un pantano de tablas compartidas).
 USUARIO = spark.sql("SELECT current_user()").collect()[0][0]
@@ -640,7 +640,7 @@ escribir_json("pedidos_items", pedidos_items)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 10. Bitácora de generación (opcional, útil para el módulo de calidad)
+# MAGIC ## 10. Bitácora de generación (para el módulo de calidad)
 # MAGIC
 # MAGIC Guarda cuántos errores se inyectaron a propósito. Al final del workshop, cuando el pipeline
 # MAGIC SDP esté corriendo, se puede contrastar **inyectado vs. detectado** por las reglas de calidad.
@@ -777,18 +777,18 @@ print(cheatsheet)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 13. ¿Quieres ir más allá? Módulos avanzados de SDP (opcional)
+# MAGIC ## 13. Continuación: recursos de SDP más allá del medallion
 # MAGIC
-# MAGIC Después de armar bronze/silver/gold, puedes explorar lo mejor de Lakeflow SDP — todo con
-# MAGIC Genie code. Mira **`docs/modulos-avanzados-sdp.md`** para 9 módulos con prompts listos:
+# MAGIC Después de armar bronze/silver/gold, el workshop sigue hacia lo mejor de Lakeflow SDP — todo
+# MAGIC con Genie code. El recorrido con los prompts está en **`docs/modulos-avanzados-sdp.md`**:
 # MAGIC
-# MAGIC - **CDC / SCD Tipo 2** con `AUTO CDC` ⭐
-# MAGIC - **Cuarentena** de datos malos (enrutar en vez de descartar) ⭐
-# MAGIC - **Event Log** del pipeline: inyectado vs. detectado ⭐
-# MAGIC - **Ingesta incremental**, **evolución de esquema**, **DQ por metadatos**, **append flows**
-# MAGIC - Remate: **Genie Space** y **Dashboard AI/BI** sobre la gold
+# MAGIC - CDC / SCD Tipo 2 con `AUTO CDC`
+# MAGIC - Cuarentena de datos malos (enrutar en vez de descartar)
+# MAGIC - Event log del pipeline: inyectado vs. detectado
+# MAGIC - Ingesta incremental, evolución de esquema, calidad por metadatos, append flows
+# MAGIC - Cierre: Genie Space y dashboard AI/BI sobre la gold
 # MAGIC
-# MAGIC > Los módulos de CDC/SCD2, incremental y evolución de esquema necesitan un segundo lote:
+# MAGIC > Los recursos de CDC/SCD2, incremental y evolución de esquema trabajan sobre un segundo lote:
 # MAGIC > corre el notebook **`02_lote_incremental.py`** (agrega archivos `*_lote2` sin borrar nada).
 
 # COMMAND ----------

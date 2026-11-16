@@ -2,10 +2,9 @@
 # MAGIC %md
 # MAGIC # 02 · Lote incremental (ingesta incremental + evolución de esquema + CDC/SCD2)
 # MAGIC
-# MAGIC Este notebook es **opcional** y sirve para los módulos avanzados del workshop. Después de haber
-# MAGIC corrido el `01_generar_datos_retail`, ejecútalo para simular que **llegaron datos nuevos** al
-# MAGIC mismo volumen de *landing*, **sin borrar** los archivos existentes. Así puedes demostrar, con
-# MAGIC Genie code + Lakeflow SDP:
+# MAGIC Este es el segundo notebook del workshop. Después de haber corrido el `01_generar_datos_retail`,
+# MAGIC ejecútalo para simular que **llegaron datos nuevos** al mismo volumen de *landing*, **sin
+# MAGIC borrar** los archivos existentes. Con él trabajas, con Genie code + Lakeflow SDP:
 # MAGIC
 # MAGIC 1. **Ingesta incremental** — Auto Loader procesa **solo los archivos nuevos** en el próximo
 # MAGIC    update del pipeline (no reprocesa todo).
