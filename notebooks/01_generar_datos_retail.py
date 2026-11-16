@@ -776,6 +776,23 @@ print(cheatsheet)
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ## 13. ¿Quieres ir más allá? Módulos avanzados de SDP (opcional)
+# MAGIC
+# MAGIC Después de armar bronze/silver/gold, puedes explorar lo mejor de Lakeflow SDP — todo con
+# MAGIC Genie code. Mira **`docs/modulos-avanzados-sdp.md`** para 9 módulos con prompts listos:
+# MAGIC
+# MAGIC - **CDC / SCD Tipo 2** con `AUTO CDC` ⭐
+# MAGIC - **Cuarentena** de datos malos (enrutar en vez de descartar) ⭐
+# MAGIC - **Event Log** del pipeline: inyectado vs. detectado ⭐
+# MAGIC - **Ingesta incremental**, **evolución de esquema**, **DQ por metadatos**, **append flows**
+# MAGIC - Remate: **Genie Space** y **Dashboard AI/BI** sobre la gold
+# MAGIC
+# MAGIC > Los módulos de CDC/SCD2, incremental y evolución de esquema necesitan un segundo lote:
+# MAGIC > corre el notebook **`02_lote_incremental.py`** (agrega archivos `*_lote2` sin borrar nada).
+
+# COMMAND ----------
+
 resumen = {
     "usuario": USUARIO,
     "destino": f"{CATALOGO}.{ESQUEMA}",
