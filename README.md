@@ -222,18 +222,16 @@ explícitamente, para que Genie use los idioms de SDP.
 
 ---
 
-## 6. Recursos de SDP más allá del medallion
+Con el pipeline base en marcha, el workshop sigue hacia los **recursos de SDP más allá del
+medallion** — lo que realmente diferencia a Lakeflow SDP. Todos se siguen construyendo con Genie
+code dentro del mismo pipeline, apuntando a tu esquema `lakeflow_workshop_<usuario>`.
 
-Con el pipeline base en marcha, el workshop sigue hacia los recursos que realmente diferencian a
-Lakeflow SDP. Todos se siguen construyendo con Genie code dentro del mismo pipeline, apuntando a tu
-esquema `lakeflow_workshop_<usuario>`.
+Los recursos de CDC/SCD2, ingesta incremental y evolución de esquema trabajan sobre un segundo lote
+de datos: corre el notebook [`notebooks/02_lote_incremental.py`](notebooks/02_lote_incremental.py)
+después del `01` (preserva el landing y solo agrega archivos nuevos, con la columna `cupon_descuento`
+y versiones actualizadas de clientes). Se ejecuta igual que el notebook 01.
 
-Los recursos 1, 4 y 5 trabajan sobre un segundo lote de datos: corre el notebook
-[`notebooks/02_lote_incremental.py`](notebooks/02_lote_incremental.py) después del `01` (preserva el
-landing y solo agrega archivos nuevos, con la columna `cupon_descuento` y versiones actualizadas de
-clientes). Se ejecuta igual que el notebook 01.
-
-### 1. CDC / SCD Tipo 2 con `AUTO CDC`
+## 6. CDC / SCD Tipo 2 con `AUTO CDC`
 
 Historizar los cambios de una dimensión **sin escribir MERGE**, usando las versiones actualizadas de
 clientes que genera el notebook 02.
@@ -246,7 +244,7 @@ clientes que genera el notebook 02.
 Cada cliente actualizado queda con dos filas (la versión antigua cerrada y la nueva vigente). Como
 variante, pide una versión SCD Tipo 1 (`dim_clientes_actual`) para comparar.
 
-### 2. Cuarentena de datos malos
+## 7. Cuarentena de datos malos
 
 En vez de `expect_or_drop` (que descarta la fila), enruta las filas malas a una tabla de cuarentena
 para auditarlas o reprocesarlas.
@@ -258,7 +256,7 @@ para auditarlas o reprocesarlas.
 
 Al final, `count(pedidos_validos) + count(pedidos_cuarentena)` = total del bronze: no se pierde nada.
 
-### 3. Observabilidad con el Event Log del pipeline
+## 8. Observabilidad con el Event Log del pipeline
 
 SDP graba un event log con las métricas de cada expectativa; publícalo como tabla para cerrar el
 ciclo de calidad.
@@ -271,7 +269,7 @@ ciclo de calidad.
 El event log se consulta con la función `event_log(...)`:
 `SELECT * FROM event_log(TABLE(<tabla_del_pipeline>))`.
 
-### 4. Ingesta incremental (streaming de verdad)
+## 9. Ingesta incremental (streaming de verdad)
 
 Después de correr el notebook 02 (que agrega `pedidos_lote2.json`), corre de nuevo tu pipeline y
 observa en el event log que Auto Loader procesó solo los archivos nuevos.
@@ -282,7 +280,7 @@ observa en el event log que Auto Loader procesó solo los archivos nuevos.
 
 El `num_output_rows` del bronze en el segundo update debería ser ≈ solo las filas del lote 2.
 
-### 5. Evolución de esquema
+## 10. Evolución de esquema
 
 El lote 2 de `pedidos` trae la columna nueva `cupon_descuento`; muestra que el pipeline la absorbe
 sin romperse.
@@ -293,7 +291,7 @@ sin romperse.
 
 La columna aparece en el bronze: nula en las filas antiguas y con valor en las nuevas.
 
-### 6. Calidad dirigida por metadatos
+## 11. Calidad dirigida por metadatos
 
 En vez de reglas fijas en el código, lee las expectativas de una tabla de configuración, para
 escalar a decenas de reglas.
@@ -302,7 +300,7 @@ escalar a decenas de reglas.
 > accion) con varias reglas de pedidos, y aplica esas expectativas dinámicamente en el silver leyendo
 > las reglas de esa tabla (usando `expect_all`), en vez de escribirlas una por una."
 
-### 7. Append flows (unificar varias fuentes)
+## 12. Append flows (unificar varias fuentes)
 
 Simula que cada país llega como un archivo separado y únelo todo en una sola streaming table.
 
@@ -310,7 +308,7 @@ Simula que cada país llega como un archivo separado y únelo todo en una sola s
 > diferentes archivos/carpetas de pedidos (por ejemplo, por lote) hacia la misma tabla destino, sin
 > duplicar la definición de la tabla."
 
-### 8. Genie Space sobre la capa gold
+## 13. Genie Space sobre la capa gold
 
 Fuera del pipeline, crea un Genie Space sobre las tablas gold para preguntar en lenguaje natural, y
 así cerrar el hilo: construiste el pipeline con Genie code y ahora lo consultas con Genie.
@@ -319,19 +317,19 @@ así cerrar el hilo: construiste el pipeline con Genie code y ahora lo consultas
 > (hecho de ventas + dimensiones). Prueba preguntas como *"ventas por país el último mes"* o
 > *"top 10 productos por ingreso"*.
 
-### 9. Dashboard AI/BI sobre la capa gold
+## 14. Dashboard AI/BI sobre la capa gold
 
 Crea un dashboard AI/BI con los KPIs mensuales de la capa gold.
 
 > Pasos: **Dashboards → Create**, usa el SQL warehouse y las tablas gold. Gráficos sugeridos:
 > ingreso por mes, ingreso por tienda/país y mix por categoría.
 
-> Secuencia sugerida: pipeline base (sección 5) → cuarentena (2) y event log (3) → notebook 02 e
-> incremental (4) + evolución de esquema (5) → SCD2 (1) → cierre con Genie Space (8) y dashboard (9).
+> Secuencia sugerida: pipeline base (sección 5) → cuarentena (7) y event log (8) → notebook 02 e
+> incremental (9) + evolución de esquema (10) → SCD2 (6) → cierre con Genie Space (13) y dashboard (14).
 
 ---
 
-## 7. Estructura del repo
+## 15. Estructura del repo
 
 ```
 lakeflow-sdp-dq-workshop/
