@@ -258,16 +258,38 @@ Al final, `count(pedidos_validos) + count(pedidos_cuarentena)` = total del bronz
 
 ## 8. Observabilidad con el Event Log del pipeline
 
-SDP graba un event log con las métricas de cada expectativa; publícalo como tabla para cerrar el
-ciclo de calidad.
+SDP graba un event log con las métricas de cada expectativa (cuántos registros pasan y fallan por
+dataset). Para cerrar el ciclo de calidad, publícalo en Unity Catalog como tabla consultable y
+compáralo contra los errores que inyectaste.
 
-> "Con Lakeflow SDP, crea una tabla `calidad_expectativas` que lea el event log del pipeline
-> (eventos de tipo `flow_progress`) y extraiga, por dataset y por expectativa, cuántos registros
-> pasaron y cuántos fallaron. Luego crea una vista que compare esos números contra la tabla
-> `_bitacora_generacion` (errores inyectados) para mostrar inyectado vs. detectado."
+**Paso 1 — Publica el event log en Unity Catalog.** En la configuración del pipeline (**Settings →
+Advanced**, o el JSON del pipeline) agrega un destino para el event log en tu propio esquema:
 
-El event log se consulta con la función `event_log(...)`:
-`SELECT * FROM event_log(TABLE(<tabla_del_pipeline>))`.
+```json
+"event_log": {
+  "catalog": "<tu_catalogo>",
+  "schema": "lakeflow_workshop_<usuario>",
+  "name": "event_log_pipeline"
+}
+```
+
+Así el event log queda como una **tabla normal** en tu esquema: consultable y compartible. La
+función `event_log(...)` directa solo la puede leer el owner del pipeline y no se puede compartir,
+por eso publicarlo es el camino recomendado.
+
+**Paso 2 — Construye la observabilidad con Genie code:**
+> "Con Lakeflow SDP, crea una vista en SQL `calidad_expectativas` que lea la tabla del event log
+> publicado (eventos de tipo `flow_progress`) y extraiga, por dataset y por expectativa, cuántos
+> registros pasaron y cuántos fallaron en la última actualización terminada. Luego compárala contra
+> la tabla `_bitacora_generacion` (errores inyectados) para mostrar inyectado vs. detectado, con la
+> diferencia y el % de detección. Calcula todos los conteos en vivo desde las tablas (incluidos los
+> duplicados, como bronze menos silver): no dejes ningún número fijo en el SQL. Usa una **vista
+> normal** (no materializada) para que siempre refleje la última corrida terminada."
+
+> 💡 Una vista normal se calcula al consultarla, así que siempre muestra la última actualización
+> terminada; una vista materializada se refrescaría durante la misma corrida que todavía está
+> escribiendo el event log y quedaría una actualización atrasada. En la primera ejecución la vista
+> estará vacía hasta que el pipeline termine — es lo esperado.
 
 ## 9. Ingesta incremental (streaming de verdad)
 
