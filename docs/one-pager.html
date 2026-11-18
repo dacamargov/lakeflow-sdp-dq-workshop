@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 14mm 15mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: #1b1f24; font-size: 10.3px; line-height: 1.45; margin: 0;
+  }
+  .bar { height: 5px; background: linear-gradient(90deg,#ff3621 0%,#ff5f46 100%); border-radius: 3px; margin-bottom: 12px; }
+  h1 { font-size: 20px; margin: 0 0 2px; color: #0b0c0e; letter-spacing: -.2px; }
+  .sub { font-size: 11.5px; color: #ff3621; font-weight: 600; margin: 0 0 8px; }
+  .lead { font-size: 10.6px; color: #3c4149; margin: 0 0 12px; }
+  h2 { font-size: 11.5px; text-transform: uppercase; letter-spacing: .6px; color: #0b0c0e;
+       margin: 13px 0 5px; padding-bottom: 3px; border-bottom: 1.5px solid #ececef; }
+  p { margin: 0 0 6px; }
+  ul { margin: 0 0 6px; padding-left: 16px; }
+  li { margin: 0 0 3px; }
+  .cols { display: flex; gap: 18px; }
+  .col { flex: 1; }
+  strong { color: #0b0c0e; }
+  table { width: 100%; border-collapse: collapse; margin: 2px 0 6px; }
+  th, td { text-align: left; padding: 4px 7px; border-bottom: 1px solid #ececef; vertical-align: top; }
+  th { background: #faf6f5; color: #0b0c0e; font-size: 9.6px; text-transform: uppercase; letter-spacing: .4px; }
+  td:first-child { font-weight: 600; color: #b92c1b; white-space: nowrap; width: 33%; }
+  ol { margin: 0 0 6px; padding-left: 17px; }
+  ol li { margin: 0 0 3px; }
+  .note { background: #f6f8fa; border-left: 3px solid #ff3621; padding: 7px 10px; font-size: 9.7px;
+          color: #42474f; border-radius: 0 4px 4px 0; margin-top: 6px; }
+  .dur { font-size: 9.9px; color: #42474f; margin-top: 4px; }
+  .foot { margin-top: 13px; padding-top: 7px; border-top: 1px solid #ececef; font-size: 8.8px; color: #8a9099; }
+</style>
+</head>
+<body>
+  <div class="bar"></div>
+  <h1>Workshop Lakeflow SDP + Data Quality</h1>
+  <p class="sub">Construye un pipeline de datos completo en Databricks, de principio a fin, con Genie code</p>
+  <p class="lead">
+    Un taller práctico donde cada participante levanta un pipeline productivo —ingesta, calidad, modelo
+    dimensional y analítica— <strong>sin escribir el código a mano</strong>. Todo se arma con Genie code
+    (Databricks Assistant) sobre Lakeflow Spark Declarative Pipelines (SDP), la evolución de DLT.
+  </p>
+
+  <div class="cols">
+    <div class="col">
+      <h2>Para quién es</h2>
+      <p>Ingenieros de datos, analytics engineers y arquitectos, además de perfiles de gobierno de
+         datos, ciencia de datos, análisis de datos y BI que quieran ver, con las manos en el teclado,
+         cómo Databricks reduce el esfuerzo de construir y mantener pipelines confiables.</p>
+      <p><strong>No se requiere experiencia previa con SDP.</strong> Sí ayuda estar cómodo con SQL y
+         conceptos básicos de datos.</p>
+
+      <h2>Qué vas a construir</h2>
+      <p>Partiendo de datos crudos de un retailer LATAM ficticio, cada quien arma en su propio espacio:</p>
+      <ul>
+        <li><strong>Ingesta bronze</strong> con Auto Loader y columnas de linaje.</li>
+        <li><strong>Capa silver</strong> tipada y normalizada, con <strong>expectativas de calidad</strong>
+            declarativas (emails válidos, montos no negativos, fechas coherentes, integridad referencial).</li>
+        <li><strong>Capa gold</strong> con dimensiones limpias, un hecho de ventas y KPIs mensuales.</li>
+        <li><strong>Analítica en lenguaje natural</strong> con un Genie Space y un dashboard AI/BI.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <h2>Lo que diferencia a SDP</h2>
+      <table>
+        <tr><th>Capacidad</th><th>Qué resuelve</th></tr>
+        <tr><td>CDC / SCD Tipo 2</td><td>Historiza cambios de una dimensión sin escribir <code>MERGE</code>.</td></tr>
+        <tr><td>Cuarentena de datos</td><td>Aísla filas malas para auditar o reprocesar, sin perder nada.</td></tr>
+        <tr><td>Observabilidad</td><td>Mide, desde el event log, cuántos registros pasan y fallan cada regla.</td></tr>
+        <tr><td>Ingesta incremental</td><td>Procesa solo los archivos nuevos, sin reprocesar lo viejo.</td></tr>
+        <tr><td>Evolución de esquema</td><td>Absorbe columnas nuevas automáticamente, sin romperse.</td></tr>
+        <tr><td>Calidad por metadatos</td><td>Define decenas de reglas en una tabla, no en el código.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h2>Agenda</h2>
+  <div class="cols">
+    <div class="col">
+      <ol>
+        <li><strong>Contexto y setup</strong> — qué es Lakeflow SDP y por qué importa; preparar el entorno.</li>
+        <li><strong>Generar los datos</strong> — un notebook deja datos crudos (con "suciedad" intencional) en tu volumen.</li>
+        <li><strong>Medallion con Genie code</strong> — bronze → silver → gold, paso a paso, con prompts guiados.</li>
+        <li><strong>CDC / SCD Tipo 2</strong> — historiza cambios de dimensiones sin escribir <code>MERGE</code>.</li>
+        <li><strong>Cuarentena de datos</strong> — aísla las filas malas para auditar o reprocesar.</li>
+      </ol>
+    </div>
+    <div class="col">
+      <ol start="6">
+        <li><strong>Observabilidad</strong> — métricas de calidad desde el event log del pipeline.</li>
+        <li><strong>Ingesta incremental</strong> — procesa solo los archivos nuevos del landing.</li>
+        <li><strong>Evolución de esquema</strong> — absorbe columnas nuevas automáticamente.</li>
+        <li><strong>Calidad por metadatos</strong> — reglas definidas en una tabla de configuración.</li>
+        <li><strong>Cierre analítico</strong> — Genie Space y dashboard AI/BI sobre la capa gold.</li>
+      </ol>
+    </div>
+  </div>
+  <p class="dur"><strong>Duración estimada:</strong> media jornada (3–4 horas).</p>
+
+  <div class="cols">
+    <div class="col">
+      <h2>Qué te llevas</h2>
+      <ul>
+        <li>La experiencia de construir un pipeline real <strong>con muchísimo menos código</strong> que un enfoque tradicional.</li>
+        <li>Un repositorio con todos los notebooks y prompts para repetirlo con tus propios datos.</li>
+        <li>Criterio para decidir cuándo y cómo aplicar SDP en tus casos de uso.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h2>Lo que necesitas</h2>
+      <ul>
+        <li>Un workspace Databricks con <strong>Unity Catalog</strong> y <strong>compute Serverless</strong>.</li>
+        <li>Un catálogo donde tengas permisos para crear esquema y volumen.</li>
+        <li><strong>Genie code / Databricks Assistant</strong> habilitado.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note">
+    Cada participante trabaja en su propio esquema aislado, así que varios pueden correr el taller en
+    paralelo sobre el mismo catálogo sin pisarse. El admin del cliente tiene una guía dedicada con el
+    SQL exacto de preparación.
+  </div>
+
+  <div class="foot">
+    <strong>Contactos:</strong> Daniel Vargas — Solutions Architect &nbsp;·&nbsp; Manfred Carvajal — Account Executive<br>
+    Databricks · Lakeflow Spark Declarative Pipelines + Data Quality — Workshop hands-on
+  </div>
+</body>
+</html>
