@@ -255,16 +255,34 @@ vez de sobrescribir, cierra la versión vieja y abre una nueva. *AUTO CDC* (`app
 idiom de SDP que aplica esos cambios por ti, **sin escribir un `MERGE`**, sobre las versiones
 actualizadas de clientes que genera el notebook 02.
 
-> "Con Lakeflow SDP, crea una dimensión `dim_clientes_scd2` de tipo SCD Tipo 2 usando AUTO CDC a
-> partir de la tabla bronze de clientes. Usa `id_cliente` como clave y `fecha_actualizacion` como
-> columna de secuencia. Mantén el historial de cambios de `segmento` y `nivel_lealtad`, con columnas
-> de inicio y fin de vigencia y una bandera de la versión actual."
+> "Con Lakeflow SDP, crea una dimensión `dim_clientes_scd2` usando **AUTO CDC con SCD Tipo 2** —en
+> SQL `AUTO CDC ... INTO ... STORED AS SCD TYPE 2`, o en Python `dlt.apply_changes(...,
+> stored_as_scd_type=2)`— a partir de la tabla bronze de clientes. Usa `id_cliente` como clave
+> (`keys`) y `fecha_actualizacion` como columna de secuencia (`sequence_by`), y mantén el historial
+> de `segmento` y `nivel_lealtad`. **Deja que SDP genere por sí solo las columnas de vigencia
+> `__START_AT` y `__END_AT` — no crees columnas de fecha ni banderas manuales.** La versión vigente
+> de cada cliente es la fila con `__END_AT` en `NULL`."
 
-**Qué esperar.** Una tabla `dim_clientes_scd2` con columnas de vigencia (`__START_AT` / `__END_AT`).
-Cada cliente actualizado queda con **dos filas**: la antigua cerrada (`__END_AT` con fecha) y la
-nueva vigente (`__END_AT` en `NULL`); los clientes sin cambios tienen una sola fila. Con los defaults
-se actualiza ~10% de los clientes. Como variante, pide una versión SCD Tipo 1 (`dim_clientes_actual`)
-para comparar: ahí cada cliente tendría una sola fila, sin historia.
+**Qué esperar.** Una tabla `dim_clientes_scd2` con las columnas de vigencia `__START_AT` / `__END_AT`
+que **SDP agrega automáticamente** (no se escriben a mano). Cada cliente actualizado queda con **dos
+filas**: la antigua cerrada (`__END_AT` con fecha) y la nueva vigente (`__END_AT` en `NULL`); los
+clientes sin cambios tienen una sola fila. Con los defaults se actualiza ~10% de los clientes. Como
+variante, pide una versión SCD Tipo 1 (`dim_clientes_actual`) para comparar: ahí cada cliente tendría
+una sola fila, sin historia.
+
+> 💡 Si Genie code genera la tabla **sin** `__START_AT` / `__END_AT` (p. ej. una sola fila por
+> cliente, o columnas de fecha con nombres propios como `fecha_inicio_vigencia`), es que **no** usó
+> AUTO CDC nativo: quedó como SCD Tipo 1. Verifícalo con `DESCRIBE TABLE dim_clientes_scd2;` y, si
+> falta, vuelve a pedirle el recurso insistiendo en `STORED AS SCD TYPE 2` / `stored_as_scd_type=2`.
+> Para ver el historial de los clientes con cambios:
+>
+> ```sql
+> SELECT id_cliente, segmento, nivel_lealtad, __START_AT, __END_AT
+> FROM dim_clientes_scd2
+> WHERE id_cliente IN (
+>   SELECT id_cliente FROM dim_clientes_scd2 GROUP BY id_cliente HAVING count(*) > 1)
+> ORDER BY id_cliente, __START_AT;
+> ```
 
 ## 7. Cuarentena de datos malos
 
