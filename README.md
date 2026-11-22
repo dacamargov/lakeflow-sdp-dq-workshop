@@ -249,43 +249,59 @@ y versiones actualizadas de clientes). Se ejecuta igual que el notebook 01.
 
 ## 6. CDC / SCD Tipo 2 con `AUTO CDC`
 
-Historizar los cambios de una dimensión **sin escribir MERGE**, usando las versiones actualizadas de
-clientes que genera el notebook 02.
+**Qué es.** *CDC* (Change Data Capture) es capturar los cambios que llegan de una fuente (altas y
+modificaciones). *SCD Tipo 2* es la forma de guardar una dimensión conservando el **historial**: en
+vez de sobrescribir, cierra la versión vieja y abre una nueva. *AUTO CDC* (`apply_changes`) es el
+idiom de SDP que aplica esos cambios por ti, **sin escribir un `MERGE`**, sobre las versiones
+actualizadas de clientes que genera el notebook 02.
 
 > "Con Lakeflow SDP, crea una dimensión `dim_clientes_scd2` de tipo SCD Tipo 2 usando AUTO CDC a
 > partir de la tabla bronze de clientes. Usa `id_cliente` como clave y `fecha_actualizacion` como
 > columna de secuencia. Mantén el historial de cambios de `segmento` y `nivel_lealtad`, con columnas
 > de inicio y fin de vigencia y una bandera de la versión actual."
 
-Cada cliente actualizado queda con dos filas (la versión antigua cerrada y la nueva vigente). Como
-variante, pide una versión SCD Tipo 1 (`dim_clientes_actual`) para comparar.
+**Qué esperar.** Una tabla `dim_clientes_scd2` con columnas de vigencia (`__START_AT` / `__END_AT`).
+Cada cliente actualizado queda con **dos filas**: la antigua cerrada (`__END_AT` con fecha) y la
+nueva vigente (`__END_AT` en `NULL`); los clientes sin cambios tienen una sola fila. Con los defaults
+se actualiza ~10% de los clientes. Como variante, pide una versión SCD Tipo 1 (`dim_clientes_actual`)
+para comparar: ahí cada cliente tendría una sola fila, sin historia.
 
 ## 7. Cuarentena de datos malos
 
-En vez de `expect_or_drop` (que descarta la fila), enruta las filas malas a una tabla de cuarentena
-para auditarlas o reprocesarlas.
+**Qué es.** La *cuarentena* es un patrón de calidad: en vez de descartar las filas que fallan las
+reglas (como haría `expect_or_drop`) o dejar que rompan el pipeline, las **desvías a una tabla
+aparte** para auditarlas o reprocesarlas. Así no pierdes nada y conservas el porqué de cada rechazo.
 
 > "Con Lakeflow SDP, a partir del bronze de pedidos crea dos tablas: `pedidos_validos` con las filas
 > que pasan las expectativas (monto_total numérico y >= 0, id_cliente e id_tienda existentes, moneda
 > válida) y `pedidos_cuarentena` con las filas que fallan, agregando una columna `motivo_falla` que
 > indique qué regla se violó y la fecha de detección."
 
-Al final, `count(pedidos_validos) + count(pedidos_cuarentena)` = total del bronze: no se pierde nada.
+**Qué esperar.** Dos tablas: `pedidos_validos` y `pedidos_cuarentena` (esta última con la columna
+`motivo_falla`). Se cumple que `count(pedidos_validos) + count(pedidos_cuarentena)` = total del
+bronze: **no se pierde ninguna fila**, solo se separan las buenas de las malas.
 
 ## 8. Observabilidad con el Event Log del pipeline
 
-SDP graba un event log con las métricas de cada expectativa; publícalo como tabla para cerrar el
-ciclo de calidad.
+**Qué es.** El *event log* es una bitácora que **SDP graba por sí solo** en cada corrida: estados de
+los flujos, linaje y, sobre todo, las métricas de calidad (cuántos registros pasaron y fallaron cada
+expectativa). Publicarlo como tabla te permite monitorear la calidad con SQL o un dashboard. (Es el
+mismo mecanismo del ítem de observabilidad de la sección 5, aquí como módulo aparte.)
 
 > "Con Lakeflow SDP, crea una tabla `calidad_expectativas` que lea el event log del pipeline
 > (eventos de tipo `flow_progress`) y extraiga, por dataset y por expectativa, cuántos registros
 > pasaron y cuántos fallaron. Luego crea una vista que compare esos números contra la tabla
 > `_bitacora_generacion` (errores inyectados) para mostrar inyectado vs. detectado."
 
-El event log se consulta con la función `event_log(...)`:
-`SELECT * FROM event_log(TABLE(<tabla_del_pipeline>))`.
+**Qué esperar.** Una tabla con el conteo de pasados/fallados por expectativa y dataset, y una vista
+que la cruza contra `_bitacora_generacion` (inyectado vs. detectado). El event log se consulta con la
+función `event_log(...)`: `SELECT * FROM event_log(TABLE(<tabla_del_pipeline>))`.
 
 ## 9. Ingesta incremental (streaming de verdad)
+
+**Qué es.** *Ingesta incremental* significa procesar **solo los datos nuevos** en cada corrida, sin
+reprocesar lo ya ingerido. Con *Auto Loader* sobre una *streaming table*, SDP lleva el control de qué
+archivos ya leyó, así que cuando llega un lote nuevo solo toma esos.
 
 Después de correr el notebook 02 (que agrega `pedidos_lote2.json`), corre de nuevo tu pipeline y
 observa en el event log que Auto Loader procesó solo los archivos nuevos.
@@ -294,9 +310,14 @@ observa en el event log que Auto Loader procesó solo los archivos nuevos.
 > de modo que una nueva ejecución solo procese los archivos nuevos que llegaron al directorio de
 > landing, sin reprocesar los antiguos."
 
-El `num_output_rows` del bronze en el segundo update debería ser ≈ solo las filas del lote 2.
+**Qué esperar.** En el segundo update, el `num_output_rows` del bronze de pedidos debería ser ≈ solo
+las filas del lote 2 (no el total), confirmando que no reprocesó lo viejo.
 
 ## 10. Evolución de esquema
+
+**Qué es.** La *evolución de esquema* es la capacidad de Auto Loader de **adaptarse cuando el origen
+cambia de forma** —por ejemplo, aparece una columna nueva— sin que tengas que redefinir nada ni que
+el pipeline falle. Con `schemaEvolutionMode = addNewColumns`, la columna nueva se suma sola.
 
 El lote 2 de `pedidos` trae la columna nueva `cupon_descuento`; muestra que el pipeline la absorbe
 sin romperse.
@@ -305,18 +326,30 @@ sin romperse.
 > (`cloudFiles.schemaEvolutionMode = addNewColumns`) para que la nueva columna `cupon_descuento` se
 > agregue automáticamente al bronze cuando aparezca en los nuevos archivos."
 
-La columna aparece en el bronze: nula en las filas antiguas y con valor en las nuevas.
+**Qué esperar.** La columna `cupon_descuento` aparece en el bronze: **nula en las filas antiguas**
+(lote 1, que no la traían) y **con valor en las nuevas** (lote 2). Auto Loader puede reiniciar el
+update al detectar el cambio de esquema y retomarlo solo — es el comportamiento esperado, no un
+error.
 
 ## 11. Calidad dirigida por metadatos
 
-En vez de reglas fijas en el código, lee las expectativas de una tabla de configuración, para
-escalar a decenas de reglas.
+**Qué es.** En vez de escribir cada expectativa fija en el código, las *defines como datos* en una
+tabla de configuración y el pipeline las **lee y aplica dinámicamente** (con `expect_all`). Así
+escalas a decenas de reglas y las cambias sin tocar el código del pipeline.
 
 > "Con Lakeflow SDP, crea una tabla `reglas_calidad` (columna_objetivo, nombre_regla, condicion_sql,
 > accion) con varias reglas de pedidos, y aplica esas expectativas dinámicamente en el silver leyendo
 > las reglas de esa tabla (usando `expect_all`), en vez de escribirlas una por una."
 
+**Qué esperar.** Una tabla `reglas_calidad` con las reglas como filas y un silver cuyas expectativas
+salen de esa tabla. Agregar o quitar una regla es editar la tabla, no el pipeline; las métricas de
+cada regla aparecen en el event log igual que las expectativas escritas a mano.
+
 ## 12. Append flows (unificar varias fuentes)
+
+**Qué es.** Un *append flow* permite que **varios flujos independientes alimenten una misma streaming
+table** sin duplicar su definición. Sirve para unir fuentes que llegan por separado (por país, por
+lote, por sistema) en una sola tabla destino.
 
 Simula que cada país llega como un archivo separado y únelo todo en una sola streaming table.
 
@@ -324,21 +357,34 @@ Simula que cada país llega como un archivo separado y únelo todo en una sola s
 > diferentes archivos/carpetas de pedidos (por ejemplo, por lote) hacia la misma tabla destino, sin
 > duplicar la definición de la tabla."
 
+**Qué esperar.** Una sola tabla `pedidos_todos` alimentada por varios flujos; su conteo es la **suma
+de todas las fuentes** unidas, con una única definición de la tabla destino.
+
 ## 13. Genie Space sobre la capa gold
 
-Fuera del pipeline, crea un Genie Space sobre las tablas gold para preguntar en lenguaje natural, y
-así cerrar el hilo: construiste el pipeline con Genie code y ahora lo consultas con Genie.
+**Qué es.** Un *Genie Space* es un espacio de Databricks donde haces **preguntas en lenguaje natural**
+sobre tus tablas y Genie genera el SQL por ti. Cierra el hilo del workshop: construiste el pipeline
+con Genie code y ahora lo consultas con Genie.
 
 > Pasos: **Genie → New**, selecciona el esquema `lakeflow_workshop_<usuario>` y las tablas gold
 > (hecho de ventas + dimensiones). Prueba preguntas como *"ventas por país el último mes"* o
 > *"top 10 productos por ingreso"*.
 
+**Qué esperar.** Un espacio que responde tus preguntas con tablas/gráficos y te muestra el SQL que
+generó sobre la capa gold.
+
 ## 14. Dashboard AI/BI sobre la capa gold
+
+**Qué es.** Un *dashboard AI/BI* es el tablero visual de Databricks para publicar los KPIs de la capa
+gold a usuarios de negocio, con gráficos y filtros.
 
 Crea un dashboard AI/BI con los KPIs mensuales de la capa gold.
 
 > Pasos: **Dashboards → Create**, usa el SQL warehouse y las tablas gold. Gráficos sugeridos:
 > ingreso por mes, ingreso por tienda/país y mix por categoría.
+
+**Qué esperar.** Un dashboard con los KPIs mensuales (ingreso por mes, por tienda/país y mix por
+categoría) consultando directamente la capa gold.
 
 > Secuencia sugerida: pipeline base (sección 5) → cuarentena (7) y event log (8) → notebook 02 e
 > incremental (9) + evolución de esquema (10) → SCD2 (6) → cierre con Genie Space (13) y dashboard (14).
