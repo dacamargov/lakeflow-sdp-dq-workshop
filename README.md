@@ -255,13 +255,13 @@ vez de sobrescribir, cierra la versión vieja y abre una nueva. *AUTO CDC* (`app
 idiom de SDP que aplica esos cambios por ti, **sin escribir un `MERGE`**, sobre las versiones
 actualizadas de clientes que genera el notebook 02.
 
-> "Con Lakeflow SDP, crea una dimensión `dim_clientes_scd2` usando **AUTO CDC con SCD Tipo 2** —en
-> SQL `AUTO CDC ... INTO ... STORED AS SCD TYPE 2`, o en Python `dlt.apply_changes(...,
-> stored_as_scd_type=2)`— a partir de la tabla bronze de clientes. Usa `id_cliente` como clave
-> (`keys`) y `fecha_actualizacion` como columna de secuencia (`sequence_by`), y mantén el historial
-> de `segmento` y `nivel_lealtad`. **Deja que SDP genere por sí solo las columnas de vigencia
-> `__START_AT` y `__END_AT` — no crees columnas de fecha ni banderas manuales.** La versión vigente
-> de cada cliente es la fila con `__END_AT` en `NULL`."
+> "Con Lakeflow SDP, crea una dimensión de clientes `dim_clientes_scd2` de tipo SCD Tipo 2, usando
+> la captura de cambios automática que SDP ofrece para esto. A partir de la tabla bronze de clientes,
+> identifica cada cliente por `id_cliente` y usa `fecha_actualizacion` para ordenar los cambios en el
+> tiempo. Mantén el historial de `segmento` y `nivel_lealtad`: cuando alguno de esos valores cambie,
+> conserva la versión anterior y abre una nueva. **Deja que SDP maneje por sí solo el control de
+> vigencia de cada versión con sus columnas estándar; no agregues columnas de fecha ni banderas
+> propias.**"
 
 **Qué esperar.** Una tabla `dim_clientes_scd2` con las columnas de vigencia `__START_AT` / `__END_AT`
 que **SDP agrega automáticamente** (no se escriben a mano). Cada cliente actualizado queda con **dos
