@@ -331,6 +331,23 @@ sin romperse.
 update al detectar el cambio de esquema y retomarlo solo — es el comportamiento esperado, no un
 error.
 
+### Modo live (opcional): verlo en vivo con un flujo continuo
+
+El lote 2 demuestra la ingesta incremental (punto 9) y la evolución de esquema (punto 10) de forma
+**estática**: dejas los archivos y re-ejecutas. Si quieres verlo **en vivo** —archivos cayendo cada
+pocos segundos y Auto Loader reaccionando— corre el notebook
+[`notebooks/03_flujo_continuo.py`](notebooks/03_flujo_continuo.py).
+
+Durante una ventana acotada escribe pequeñas tandas de pedidos nuevos al landing cada
+`intervalo_segundos`, y **a partir de la tanda `tanda_nueva_columna` empieza a incluir una columna
+nueva (`canal_captacion`)**. Pon tu pipeline en **modo continuo** (Settings → *Continuous*) y
+arráncalo; verás en el event log cómo ingiere solo las tandas nuevas y cómo absorbe la columna nueva
+cuando aparece.
+
+> ⚠️ Es un modo de **demostración** (ideal para que lo maneje el presentador). Corre por
+> `duracion_minutos` y se detiene solo; si pones el pipeline en continuo, **apágalo al terminar**
+> para no dejar compute encendido.
+
 ## 11. Calidad dirigida por metadatos
 
 **Qué es.** En vez de escribir cada expectativa fija en el código, las *defines como datos* en una
@@ -400,5 +417,6 @@ lakeflow-sdp-dq-workshop/
 │   └── prerequisitos-admin.md       # qué prepara el admin del cliente (permisos, grupo, compute)
 └── notebooks/
     ├── 01_generar_datos_retail.py   # genera los datos crudos de retail en tu volumen
-    └── 02_lote_incremental.py       # segundo lote: alimenta CDC/SCD2, incremental y evolución de esquema
+    ├── 02_lote_incremental.py       # segundo lote: alimenta CDC/SCD2, incremental y evolución de esquema
+    └── 03_flujo_continuo.py         # (opcional) modo live: pedidos cada pocos segundos + columna nueva en vivo
 ```
