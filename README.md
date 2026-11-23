@@ -201,11 +201,13 @@ explícitamente, para que Genie use los idioms de SDP.
 > string y agrega columnas de linaje con el nombre de archivo y la fecha de ingesta."
 
 **Silver (tipado, normalización y expectativas de calidad):**
-> "Con Lakeflow SDP, crea la capa silver con tablas que tipen y normalicen cada entidad a partir de
-> las tablas bronze. Agrega expectativas de calidad (expectations de SDP): email con formato válido,
-> `monto_total` numérico y >= 0, `fecha_pedido` no futura, `descuento_pct` entre 0 y 100, cantidades
-> > 0, y que `id_cliente` e `id_tienda` existan en sus dimensiones. Normaliza el país a código ISO y
-> deduplica clientes y productos."
+> "Con Lakeflow SDP, crea la capa silver a partir de las tablas bronze: una tabla por entidad, con
+> cada columna convertida a su tipo correcto (fechas, números y textos) y los valores normalizados.
+> Agrega expectativas de calidad de SDP que validen que: el email del cliente tiene formato válido;
+> el monto total del pedido es numérico y no negativo; la fecha del pedido no está en el futuro; el
+> descuento está entre 0 y 100; las cantidades son mayores que cero; y cada pedido apunta a un
+> cliente y a una tienda que existen en sus dimensiones. Por último, normaliza el país a su código
+> ISO y elimina los clientes y productos duplicados."
 
 **Gold (modelo dimensional y métricas):**
 > "Con Lakeflow SDP, crea la capa gold a partir de las tablas silver, con tablas de dimensiones
@@ -221,17 +223,21 @@ es una tabla consultable —`inyectado | detectado | % detección` por regla— 
 compartir. En producción, donde no tienes esa "verdad" inyectada, el mismo patrón sirve para
 **monitorear la tasa de fallas por regla en el tiempo** y detectar cuándo se degrada una fuente.
 
-> "Con Lakeflow SDP, crea la capa de observabilidad de calidad: primero publica el event log del
-> pipeline en Unity Catalog (en la configuración del pipeline, como tabla dentro de tu esquema) y
-> luego crea una vista en SQL que lea esa tabla del event log y publique, por dataset y por
-> expectativa, cuántos registros pasaron y cuántos fallaron, comparándolos contra
-> `{catalogo}.lakeflow_workshop_{usuario}._bitacora_generacion` para mostrar *inyectado vs.
-> detectado*. Calcula los conteos en vivo desde las tablas (sin números fijos) y usa una vista
-> normal, no materializada."
+> "Con Lakeflow SDP, crea la capa de observabilidad de calidad. Crea una vista en SQL que lea el
+> event log del pipeline —la bitácora que SDP graba por sí solo en cada corrida— y muestre, por cada
+> tabla y cada expectativa, cuántos registros pasaron y cuántos fallaron en la última ejecución.
+> Luego compara esos números con la tabla
+> `{catalogo}.lakeflow_workshop_{usuario}._bitacora_generacion`, donde el notebook 01 anotó cuántos
+> errores inyectó a propósito, para mostrar lado a lado *inyectado vs. detectado* por regla. Calcula
+> todos los conteos en vivo desde las tablas (sin números fijos) y usa una vista normal, no
+> materializada, para que siempre refleje la última corrida."
 
-> 💡 Publicar el event log en UC lo deja como **tabla consultable y compartible**; la función
-> `event_log(...)` directa solo la puede leer el owner del pipeline. Una **vista normal** siempre
-> refleja la última corrida terminada (una materializada quedaría una actualización atrasada).
+> 💡 La vista lee el event log **directamente** desde el pipeline: funciona de inmediato para el dueño
+> del pipeline y siempre muestra la última corrida, sin pasos extra de configuración. Si además
+> quieres dejar el event log como una tabla que otras personas puedan consultar, puedes publicarlo en
+> Unity Catalog desde **Settings → Advanced → Event logs**; en ese caso usa siempre un **nombre de
+> tabla nuevo y libre** (si el nombre ya existe, el pipeline no lo adopta y sigue escribiendo en su
+> registro interno). Para el workshop, leer el event log directamente es lo más simple y confiable.
 
 > El objetivo pedagógico de toda esta sección: ver cómo Genie code arma el DAG, la incrementalidad y
 > la calidad declarativa con muchísimo menos código que un pipeline tradicional.
