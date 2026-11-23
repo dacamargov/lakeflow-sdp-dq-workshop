@@ -210,9 +210,10 @@ explícitamente, para que Genie use los idioms de SDP.
 > ISO y elimina los clientes y productos duplicados."
 
 **Gold (modelo dimensional y métricas):**
-> "Con Lakeflow SDP, crea la capa gold a partir de las tablas silver, con tablas de dimensiones
-> limpias de clientes, productos y tiendas, un hecho de ventas al grano de línea, y KPIs mensuales de
-> ventas por tienda y por categoría. Usa `CLUSTER BY` en vez de particionar."
+> "Con Lakeflow SDP, crea la capa gold a partir de las tablas silver: tablas de dimensiones limpias
+> de clientes, productos y tiendas; una tabla de hechos de ventas en la que cada fila es una línea de
+> pedido (un producto dentro de un pedido); y KPIs mensuales de ventas por tienda y por categoría.
+> Usa `CLUSTER BY` en vez de particionar."
 
 **Observabilidad de calidad:**
 
