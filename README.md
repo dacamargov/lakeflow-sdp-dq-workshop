@@ -1,14 +1,15 @@
-# Workshop · Lakeflow SDP + Data Quality con Genie code
+# Workshop · Lakeflow SDP + Data Quality con Genie Code
 
-Workshop hands-on para construir un pipeline de datos completo con Databricks Lakeflow Spark
-Declarative Pipelines (SDP) y calidad de datos, todo con Genie code (Databricks Assistant) y sin
-escribir el código a mano.
+Workshop hands-on para construir un pipeline de datos completo con **Databricks Lakeflow** —las
+*pipelines* declarativas de Databricks (evolución de Delta Live Tables / DLT), basadas en el estándar
+abierto **Apache Spark Declarative Pipelines (SDP)**— y calidad de datos, todo con **Genie Code**
+(antes *Databricks Assistant*) y sin escribir el código a mano.
 
 El recorrido es el siguiente:
 
 1. Corres un notebook que genera datos crudos de un retailer LATAM ficticio (Mercado Andino) y los
    deja como archivos en un volumen de Unity Catalog.
-2. A partir de ahí construyes el pipeline con Genie code. Primero el medallion bronze → silver →
+2. A partir de ahí construyes el pipeline con Genie Code. Primero el medallion bronze → silver →
    gold con expectativas de calidad, deduplicación y métricas; después los recursos que hacen que
    SDP valga la pena: CDC/SCD2, cuarentena de datos, observabilidad con el event log, ingesta
    incremental y evolución de esquema.
@@ -25,7 +26,7 @@ nada fijo en el código.
 | **Workspace Databricks** | Con **Unity Catalog** habilitado. |
 | **Compute Serverless** | El notebook está pensado para serverless (o cualquier cluster con Spark). No instala librerías. |
 | **Un catálogo existente** | Necesitas un catálogo sobre el que tengas `USE CATALOG`, `CREATE SCHEMA` y `CREATE VOLUME`. El notebook **crea el esquema y el volumen**, pero **no crea el catálogo**. |
-| **Genie code / Databricks Assistant** | Para la segunda parte del workshop (construir el pipeline). |
+| **Genie Code** (antes *Databricks Assistant*) | Para la segunda parte del workshop (construir el pipeline). |
 | **Databricks CLI** (opcional) | Solo si prefieres importar el notebook por línea de comandos en vez de la UI. |
 
 > El notebook usa **solo la librería estándar de Python + Spark**: no hace `pip install` de nada,
@@ -69,7 +70,7 @@ dacamargovws_catalog                          ← único recurso compartido
 ├── lakeflow_workshop_ana_gomez               ← esquema por usuario
 │   ├── landing/                              ← volumen por usuario (dentro de su esquema)
 │   ├── _bitacora_generacion
-│   └── (bronze/silver/gold que creas con Genie code)   ← tus tablas, aisladas
+│   └── (bronze/silver/gold que creas con Genie Code)   ← tus tablas, aisladas
 ├── lakeflow_workshop_maria_lopez
 │   └── ...
 └── lakeflow_workshop_juan_perez
@@ -77,7 +78,7 @@ dacamargovws_catalog                          ← único recurso compartido
 ```
 
 Por qué así: al tener cada quien su propio esquema, **las tablas del pipeline que construyas luego
-con Genie code quedan aisladas** y el catálogo no se vuelve un pantano de tablas de todos.
+con Genie Code quedan aisladas** y el catálogo no se vuelve un pantano de tablas de todos.
 Cada participante solo necesita `USE CATALOG` + `CREATE SCHEMA` sobre el catálogo compartido.
 
 > Por ejemplo, para `ana.gomez@empresa.com` el destino sería
@@ -152,7 +153,7 @@ tus reglas de calidad estén corriendo).
 ```
 
 Son **datos crudos y transaccionales**: una fila = un evento. **No hay ningún agregado**
-(`total_`, `sum_`, `avg_`): esas métricas las calcula la capa *gold* que construyes con Genie code.
+(`total_`, `sum_`, `avg_`): esas métricas las calcula la capa *gold* que construyes con Genie Code.
 
 ### Calidad de datos intencional
 
@@ -174,17 +175,17 @@ algo que atrapar:
 
 ---
 
-## 5. Siguiente paso: construir el pipeline con Genie code
+## 5. Siguiente paso: construir el pipeline con Genie Code
 
 Esta es la parte central del workshop. Con los datos ya en el volumen, abre un
-**Lakeflow Spark Declarative Pipeline** y pídele a **Genie code** que lo construya por capas.
+**Lakeflow Spark Declarative Pipeline** y pídele a **Genie Code** que lo construya por capas.
 
 > 🔑 **Cada participante usa SUS propios valores.** Como la data vive en tu esquema
 > `lakeflow_workshop_{usuario}`, los prompts apuntan a **tu** ruta de landing. Para que nadie se equivoque,
 > **el notebook imprime al final (sección 12) los 4 prompts ya rellenados con tus valores** — solo
-> cópialos y pégalos en Genie code dentro del pipeline.
+> cópialos y pégalos en Genie Code dentro del pipeline.
 
-No hace falta crear ni nombrar el pipeline a mano: **deja que Genie code lo cree** al pegar los
+No hace falta crear ni nombrar el pipeline a mano: **deja que Genie Code lo cree** al pegar los
 prompts. Aunque dos participantes terminen con un pipeline del mismo nombre, cada uno queda a nombre
 de su **owner** y escribe en **su propio esquema**, así que no hay colisión de datos.
 
@@ -240,7 +241,7 @@ compartir. En producción, donde no tienes esa "verdad" inyectada, el mismo patr
 > tabla nuevo y libre** (si el nombre ya existe, el pipeline no lo adopta y sigue escribiendo en su
 > registro interno). Para el workshop, leer el event log directamente es lo más simple y confiable.
 
-> El objetivo pedagógico de toda esta sección: ver cómo Genie code arma el DAG, la incrementalidad y
+> El objetivo pedagógico de toda esta sección: ver cómo Genie Code arma el DAG, la incrementalidad y
 > la calidad declarativa con muchísimo menos código que un pipeline tradicional.
 
 ---
@@ -258,8 +259,9 @@ y versiones actualizadas de clientes). Se ejecuta igual que el notebook 01.
 
 **Qué es.** *CDC* (Change Data Capture) es capturar los cambios que llegan de una fuente (altas y
 modificaciones). *SCD Tipo 2* es la forma de guardar una dimensión conservando el **historial**: en
-vez de sobrescribir, cierra la versión vieja y abre una nueva. *AUTO CDC* (`apply_changes`) es el
-idiom de SDP que aplica esos cambios por ti, **sin escribir un `MERGE`**, sobre las versiones
+vez de sobrescribir, cierra la versión vieja y abre una nueva. *AUTO CDC* (en Python,
+`create_auto_cdc_flow`; antes `apply_changes`) es el idiom de SDP que aplica esos cambios por ti,
+**sin escribir un `MERGE`**, sobre las versiones
 actualizadas de clientes que genera el notebook 02.
 
 > "Con Lakeflow SDP, crea una dimensión de clientes `dim_clientes_scd2` de tipo SCD Tipo 2, usando
@@ -277,7 +279,7 @@ clientes sin cambios tienen una sola fila. Con los defaults se actualiza ~10% de
 variante, pide una versión SCD Tipo 1 (`dim_clientes_actual`) para comparar: ahí cada cliente tendría
 una sola fila, sin historia.
 
-> 💡 Si Genie code genera la tabla **sin** `__START_AT` / `__END_AT` (p. ej. una sola fila por
+> 💡 Si Genie Code genera la tabla **sin** `__START_AT` / `__END_AT` (p. ej. una sola fila por
 > cliente, o columnas de fecha con nombres propios como `fecha_inicio_vigencia`), es que **no** usó
 > AUTO CDC nativo: quedó como SCD Tipo 1. Verifícalo con
 > `DESCRIBE TABLE {catalogo}.lakeflow_workshop_{usuario}.dim_clientes_scd2;` y, si falta, vuelve a
@@ -405,17 +407,17 @@ Simula que cada país llega como un archivo separado y únelo todo en una sola s
 **Qué esperar.** Una sola tabla `pedidos_todos` alimentada por varios flujos; su conteo es la **suma
 de todas las fuentes** unidas, con una única definición de la tabla destino.
 
-## 13. Genie Space sobre la capa gold
+## 13. Genie Agent sobre la capa gold
 
-**Qué es.** Un *Genie Space* es un espacio de Databricks donde haces **preguntas en lenguaje natural**
-sobre tus tablas y Genie genera el SQL por ti. Cierra el hilo del workshop: construiste el pipeline
-con Genie code y ahora lo consultas con Genie.
+**Qué es.** Un *Genie Agent* (antes *Genie Space*) es un espacio de Databricks donde haces
+**preguntas en lenguaje natural** sobre tus tablas y Genie genera el SQL por ti. Cierra el hilo del
+workshop: construiste el pipeline con Genie Code y ahora lo consultas con Genie.
 
-> Pasos: **Genie → New**, selecciona el esquema `lakeflow_workshop_<usuario>` y las tablas gold
-> (hecho de ventas + dimensiones). Prueba preguntas como *"ventas por país el último mes"* o
-> *"top 10 productos por ingreso"*.
+> Pasos: en la barra lateral abre **Genie** y crea un nuevo agente (**New**); selecciona el esquema
+> `lakeflow_workshop_<usuario>` y las tablas gold (hecho de ventas + dimensiones). Prueba preguntas
+> como *"ventas por país el último mes"* o *"top 10 productos por ingreso"*.
 
-**Qué esperar.** Un espacio que responde tus preguntas con tablas/gráficos y te muestra el SQL que
+**Qué esperar.** Un agente que responde tus preguntas con tablas/gráficos y te muestra el SQL que
 generó sobre la capa gold.
 
 ## 14. Dashboard AI/BI sobre la capa gold
@@ -432,7 +434,7 @@ Crea un dashboard AI/BI con los KPIs mensuales de la capa gold.
 categoría) consultando directamente la capa gold.
 
 > Secuencia sugerida: pipeline base (sección 5) → cuarentena (7) y event log (8) → notebook 02 e
-> incremental (9) + evolución de esquema (10) → SCD2 (6) → cierre con Genie Space (13) y dashboard (14).
+> incremental (9) + evolución de esquema (10) → SCD2 (6) → cierre con Genie Agent (13) y dashboard (14).
 
 ---
 
