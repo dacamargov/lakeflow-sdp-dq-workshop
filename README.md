@@ -248,12 +248,21 @@ compartir. En producción, donde no tienes esa "verdad" inyectada, el mismo patr
 
 Con el pipeline base en marcha, el workshop sigue hacia los **recursos de SDP más allá del
 medallion** — lo que realmente diferencia a Lakeflow SDP. Todos se siguen construyendo con Genie
-code dentro del mismo pipeline, apuntando a tu esquema `lakeflow_workshop_<usuario>`.
+Code dentro del mismo pipeline, apuntando a tu esquema `lakeflow_workshop_<usuario>`.
 
 Los recursos de CDC/SCD2, ingesta incremental y evolución de esquema trabajan sobre un segundo lote
 de datos: corre el notebook [`notebooks/02_lote_incremental.py`](notebooks/02_lote_incremental.py)
 después del `01` (preserva el landing y solo agrega archivos nuevos, con la columna `cupon_descuento`
 y versiones actualizadas de clientes). Se ejecuta igual que el notebook 01.
+
+> 🔁 **Antes de seguir: ¿qué es un *flow*?** Un *flow* es la unidad que **mueve datos hacia una
+> tabla** (streaming table o materialized view) en Lakeflow. El detalle clave: **todo lo que ya
+> construiste usa flows**, aunque no los nombraras. Cuando definiste una tabla junto con su consulta
+> en un solo paso (bronze, silver), SDP creó por debajo un *flow por defecto* con el mismo nombre de
+> la tabla. Los recursos que siguen son, en el fondo, **tipos de flow**: el AUTO CDC del punto 6 es un
+> flow de captura de cambios, y los *append flows* del punto 12 son flows que puedes **definir por
+> separado** de su tabla destino para que **varias fuentes alimenten una misma tabla**. Tenlo como el
+> concepto que une todo el pipeline.
 
 ## 6. CDC / SCD Tipo 2 con `AUTO CDC`
 
@@ -262,7 +271,8 @@ modificaciones). *SCD Tipo 2* es la forma de guardar una dimensión conservando 
 vez de sobrescribir, cierra la versión vieja y abre una nueva. *AUTO CDC* (en Python,
 `create_auto_cdc_flow`; antes `apply_changes`) es el idiom de SDP que aplica esos cambios por ti,
 **sin escribir un `MERGE`**, sobre las versiones
-actualizadas de clientes que genera el notebook 02.
+actualizadas de clientes que genera el notebook 02. En términos de SDP, AUTO CDC define un **flow de
+captura de cambios** sobre una streaming table destino (otro tipo de flow, además del por defecto).
 
 > "Con Lakeflow SDP, crea una dimensión de clientes `dim_clientes_scd2` de tipo SCD Tipo 2, usando
 > la captura de cambios automática que SDP ofrece para esto. A partir de la tabla bronze de clientes,
@@ -394,9 +404,13 @@ cada regla aparecen en el event log igual que las expectativas escritas a mano.
 
 ## 12. Append flows (unificar varias fuentes)
 
-**Qué es.** Un *append flow* permite que **varios flujos independientes alimenten una misma streaming
-table** sin duplicar su definición. Sirve para unir fuentes que llegan por separado (por país, por
-lote, por sistema) en una sola tabla destino.
+**Qué es.** Hasta aquí cada tabla tenía **un** flow (el que se crea junto con ella). Un *append flow*
+es un flow que **defines por separado** de su tabla destino, lo que permite que **varias fuentes
+independientes alimenten una misma streaming table** sin duplicar su definición y **sin full
+refresh**. Es la alternativa incremental al `UNION`: en vez de una consulta que une todo (y obliga a
+reprocesar entero), sumas un flow por fuente y puedes **agregar fuentes nuevas sin reprocesar** lo ya
+cargado. Sirve para unir datos que llegan por separado (por país, por lote, por sistema) en una sola
+tabla destino.
 
 Simula que cada país llega como un archivo separado y únelo todo en una sola streaming table.
 
