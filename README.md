@@ -456,11 +456,56 @@ Crea un dashboard AI/BI con los KPIs mensuales de la capa gold.
 categoría) consultando directamente la capa gold.
 
 > Secuencia sugerida: pipeline base (sección 5) → cuarentena (7) y event log (8) → notebook 02 e
-> incremental (9) + evolución de esquema (10) → SCD2 (6) → cierre con Genie Agent (13) y dashboard (14).
+> incremental (9) + evolución de esquema (10) → SCD2 (6) → cierre con Genie Agent (13), dashboard (14)
+> y monitoreo automático con Genie ZeroOps (15).
+
+## 15. Monitoreo automático del pipeline con Genie ZeroOps
+
+**Qué es.** *Genie ZeroOps* (Beta) es un **agente que corre en segundo plano**, sin que le pidas nada:
+vigila tus **jobs, pipelines y tablas**, detecta fallas y problemas de calidad (una tabla que quedó
+vieja o incompleta, un cambio de esquema que rompió algo aguas abajo), **encuentra la causa raíz** y
+te **propone un arreglo** con un enlace al origen (el notebook/código donde corregir). A diferencia de
+Genie Code —que responde cuando lo invocas—, ZeroOps trabaja solo y te deja los hallazgos (*insights*)
+en una bandeja de entrada. Cierra el ciclo del workshop: construiste el pipeline con Genie Code y ahora
+dejas que Genie lo **opere y cuide** por ti.
+
+**Antes de empezar (el camino).** Es una *preview*: un **admin del workspace** debe activarla en
+**Settings → Previews → Genie ZeroOps**. Necesitas permiso `OWNER`, `CAN MANAGE` o `CAN VIEW` sobre el
+pipeline y las tablas que quieras vigilar (las que creaste en este workshop ya cumplen). Luego:
+
+> 1. En la barra lateral abre **Jobs & Pipelines** y pulsa **Open ZeroOps**.
+> 2. La primera vez te pide configurarlo: pulsa **Configure** para abrir el chat de Genie Code.
+> 3. Cuando Genie Code pregunte **qué monitorear**, descríbelo en lenguaje natural con el prompt de abajo.
+
+> "Monitorea mi pipeline de este workshop y todas las tablas del esquema
+> `lakeflow_workshop_<usuario>` (bronze, silver, gold, las de cuarentena y la dimensión SCD2). Avísame
+> si el pipeline falla, si alguna tabla queda vieja o incompleta, o si un cambio de esquema rompe una
+> tabla aguas abajo."
+
+Opcional — afina cómo investiga o a dónde avisa (en el mismo chat de **Configure**):
+
+> "Cuando el pipeline falle, revisa primero la frescura de las fuentes en `landing` antes de
+> recomendar un reintento."
+
+> "Envía las notificaciones de los insights importantes al destino de Slack `<nombre_del_destino>`."
+> *(el admin debe crear antes el destino de notificación en el workspace; soporta Slack, Teams,
+> PagerDuty y webhooks, no email)*
+
+**Qué esperar.** Al fijar el alcance, ZeroOps hace un **backfill de las últimas 24 h** y luego reporta
+en continuo. Cada *insight* trae tres cosas: **qué detectó**, la **causa raíz** y un **arreglo
+propuesto** con enlace al origen. En el mismo hilo puedes pedirle que **aplique el arreglo**: lo
+escribe directo sobre el código del workspace, o —si el código vive en Git— te ayuda a abrir un *pull
+request* en una rama nueva (nunca hace *force-push* y sólo empuja tras tu confirmación). Marca el
+insight como *Resolved*, o se resuelve solo tras la siguiente corrida exitosa (~15 min).
+
+> 💡 ZeroOps vigila **jobs, pipelines y tablas** (no modelos ni apps) y detecta **fallas y problemas de
+> calidad**, no regresiones de costo o rendimiento. La detección de calidad sobre tablas usa *data
+> quality monitoring* (se factura aparte). Tus instrucciones personalizadas de investigación se guardan
+> en `/Workspace/Users/<tu_usuario>/.assistant/zeroops/instructions.md`.
 
 ---
 
-## 15. Estructura del repo
+## 16. Estructura del repo
 
 ```
 lakeflow-sdp-dq-workshop/
